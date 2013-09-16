@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="Macros"
+	>
+	<UserMacro
+		Name="PHYSX_SDK"
+		Value="C:\Program Files (x86)\NVIDIA Corporation\NVIDIA PhysX SDK\3.2.4\"
+	/>
+</VisualStudioPropertySheet>
