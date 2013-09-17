@@ -1,7 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 10.00
 # Visual Studio 2008
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PhysXTutorial", "PhysXTutorial.vcproj", "{FC9618AF-5F94-4E8E-9735-0528397B37C9}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BasicApp", "BasicApp.vcproj", "{3BDE2951-63B5-416F-80E6-3037FAD5D6B5}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BasicAppOO", "BasicAppOO.vcproj", "{FC9618AF-5F94-4E8E-9735-0528397B37C9}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PhysXTutorial", "PhysXTutorial.vcproj", "{ABC559CC-CE09-4415-8F7F-FD5F3F56802E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -9,10 +13,18 @@ Global
 		Release|Win32 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3BDE2951-63B5-416F-80E6-3037FAD5D6B5}.Debug|Win32.ActiveCfg = Debug|Win32
+		{3BDE2951-63B5-416F-80E6-3037FAD5D6B5}.Debug|Win32.Build.0 = Debug|Win32
+		{3BDE2951-63B5-416F-80E6-3037FAD5D6B5}.Release|Win32.ActiveCfg = Release|Win32
+		{3BDE2951-63B5-416F-80E6-3037FAD5D6B5}.Release|Win32.Build.0 = Release|Win32
 		{FC9618AF-5F94-4E8E-9735-0528397B37C9}.Debug|Win32.ActiveCfg = Debug|Win32
 		{FC9618AF-5F94-4E8E-9735-0528397B37C9}.Debug|Win32.Build.0 = Debug|Win32
 		{FC9618AF-5F94-4E8E-9735-0528397B37C9}.Release|Win32.ActiveCfg = Release|Win32
 		{FC9618AF-5F94-4E8E-9735-0528397B37C9}.Release|Win32.Build.0 = Release|Win32
+		{ABC559CC-CE09-4415-8F7F-FD5F3F56802E}.Debug|Win32.ActiveCfg = Debug|Win32
+		{ABC559CC-CE09-4415-8F7F-FD5F3F56802E}.Debug|Win32.Build.0 = Debug|Win32
+		{ABC559CC-CE09-4415-8F7F-FD5F3F56802E}.Release|Win32.ActiveCfg = Release|Win32
+		{ABC559CC-CE09-4415-8F7F-FD5F3F56802E}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

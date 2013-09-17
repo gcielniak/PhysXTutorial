@@ -1,7 +1,8 @@
 #include <iostream>
 #include <iomanip>
 #include <windows.h> //delay function
-#include "VisualDebugger.h"
+#include "PxPhysicsAPI.h"
+
 #include "MyPhysicsEngine.h"
 
 using namespace std;
@@ -9,7 +10,6 @@ using namespace physx;
 
 int main()
 {
-	VisualDebugger debugger;
 	MyPhysicsEngine physics_engine;
 
 	try { physics_engine.Init(); }

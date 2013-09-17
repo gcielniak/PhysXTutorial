@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="PhysXTutorial"
-	ProjectGUID="{ABC559CC-CE09-4415-8F7F-FD5F3F56802E}"
+	Name="BasicApp"
+	ProjectGUID="{3BDE2951-63B5-416F-80E6-3037FAD5D6B5}"
 	RootNamespace="PhysXTutorial"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
@@ -177,7 +177,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\TutorialApp.cpp"
+				RelativePath=".\BasicApp.cpp"
 				>
 			</File>
 		</Filter>
@@ -186,22 +186,6 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
-			<File
-				RelativePath=".\Exception.h"
-				>
-			</File>
-			<File
-				RelativePath=".\MyPhysicsEngine.h"
-				>
-			</File>
-			<File
-				RelativePath=".\PhysicsEngine.h"
-				>
-			</File>
-			<File
-				RelativePath=".\VisualDebugger.h"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
