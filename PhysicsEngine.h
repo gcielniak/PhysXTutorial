@@ -1,9 +1,11 @@
 #pragma once
 
+#include <iostream>
 #include "Exception.h"
 #include "PxPhysicsAPI.h"
 
 using namespace physx;
+using namespace std;
 
 class PhysicsEngine
 {
@@ -20,6 +22,9 @@ protected:
 public:
 	~PhysicsEngine()
 	{
+		cerr << "PhysicsEngine::~PhysicsEngine" << endl;
+		if (scene)
+			scene->release();
 		if (vd_connection)
 			vd_connection->release();
 		if (physics)
@@ -47,7 +52,7 @@ public:
 			PxVisualDebuggerExt::getAllConnectionFlags());
 
 		//default material
-		default_material = physics->createMaterial(0.0, 0.0, 0.0);
+		default_material = physics->createMaterial(0.0, 0.0, 0.5);
 
 		//scene
 		PxSceneDesc sceneDesc(physics->getTolerancesScale());

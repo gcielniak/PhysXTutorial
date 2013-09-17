@@ -42,7 +42,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="$(PHYSX_SDK)\Include"
+				AdditionalIncludeDirectories="&quot;$(PHYSX_SDK)\Include&quot;;.\Graphics\include\win32\GL"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;PX_SUPPORT_VISUAL_DEBUGGER"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -64,7 +64,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="PhysX3CommonDEBUG_x86.lib PhysX3DEBUG_x86.lib PhysX3ExtensionsDEBUG.lib PhysXVisualDebuggerSDKDEBUG.lib"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="$(PHYSX_SDK)\Lib\win32\"
+				AdditionalLibraryDirectories="&quot;$(PHYSX_SDK)\Lib\win32\&quot;;.\Graphics\lib\win32\glut"
 				IgnoreDefaultLibraryNames="LIBCMTD"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -180,6 +180,18 @@
 				RelativePath=".\TutorialApp.cpp"
 				>
 			</File>
+			<Filter
+				Name="SnippetRender"
+				>
+				<File
+					RelativePath=".\SnippetRender\SnippetCamera.cpp"
+					>
+				</File>
+				<File
+					RelativePath=".\SnippetRender\SnippetRender.cpp"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -202,6 +214,18 @@
 				RelativePath=".\VisualDebugger.h"
 				>
 			</File>
+			<Filter
+				Name="SnippetRender"
+				>
+				<File
+					RelativePath=".\SnippetRender\SnippetCamera.h"
+					>
+				</File>
+				<File
+					RelativePath=".\SnippetRender\SnippetRender.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Resource Files"
