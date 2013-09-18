@@ -20,6 +20,8 @@ int main()
 
 	VisualDebugger debugger;
 
+	debugger.SetEngine(physics_engine);
+
 	debugger.Init("PhysX Tutorial");
 
 	debugger.Start();

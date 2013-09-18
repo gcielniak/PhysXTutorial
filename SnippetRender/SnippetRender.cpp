@@ -32,6 +32,8 @@
 
 using namespace physx;
 
+int render_quality = 10;
+
 static float gCylinderData[]={
 	1.0f,0.0f,1.0f,1.0f,0.0f,1.0f,1.0f,0.0f,0.0f,1.0f,0.0f,0.0f,
 	0.866025f,0.500000f,1.0f,0.866025f,0.500000f,1.0f,0.866025f,0.500000f,0.0f,0.866025f,0.500000f,0.0f,
@@ -141,7 +143,7 @@ void renderGeometry(const PxGeometryHolder& h)
 		break;
 	case PxGeometryType::eSPHERE:		
 		{
-			glutSolidSphere(h.sphere().radius, 10, 10);		
+			glutSolidSphere(h.sphere().radius, render_quality, render_quality);		
 		}
 		break;
 	case PxGeometryType::eCAPSULE:
@@ -154,14 +156,14 @@ void renderGeometry(const PxGeometryHolder& h)
 			glPushMatrix();
 			glTranslatef(0.0f, halfHeight, 0.0f);
 			glScalef(radius,radius,radius);
-			glutSolidSphere(1, 10, 10);		
+			glutSolidSphere(1, render_quality, render_quality);		
 			glPopMatrix();
 
 			//Sphere
 			glPushMatrix();
 			glTranslatef(0.0f,-halfHeight, 0.0f);
 			glScalef(radius,radius,radius);
-			glutSolidSphere(1, 10, 10);		
+			glutSolidSphere(1, render_quality, render_quality);		
 			glPopMatrix();
 
 			//Cylinder
@@ -342,6 +344,10 @@ void finishRender()
 	glutSwapBuffers();
 }
 
+void setRenderQuality(int value)
+{
+	render_quality = value;
+}
 
 } //namespace Snippets
 

@@ -48,6 +48,12 @@ public:
 	physx::PxVec3		getEye()	const;
 	physx::PxVec3		getDir()	const;
 	physx::PxTransform	getTransform() const;
+	float				speed;//motion smoothnes
+	void				MoveForward();
+	void				MoveBackward();
+	void				MoveLeft();
+	void				MoveRight();
+
 private:
 	physx::PxVec3	mEye;
 	physx::PxVec3	mDir;

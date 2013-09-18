@@ -50,6 +50,7 @@
 
 namespace Snippets
 {
+void setRenderQuality(int value);
 void setupDefaultWindow(const char* name);
 void setupDefaultRenderState();
 

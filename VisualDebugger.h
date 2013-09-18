@@ -1,10 +1,13 @@
 #pragma once
 
 #include <vector>
+#include "PhysicsEngine.h"
 #include "SnippetRender/SnippetRender.h"
 #include "SnippetRender/SnippetCamera.h"
 
 using namespace physx;
+
+PhysicsEngine* engine;
 
 class VisualDebugger
 {
@@ -13,6 +16,7 @@ class VisualDebugger
 public:
 	void Init(const std::string window_name)
 	{
+		Snippets::setRenderQuality(40);
 		Snippets::setupDefaultWindow(window_name.c_str());
 		Snippets::setupDefaultRenderState();
 
@@ -27,15 +31,19 @@ public:
 
 	void Start() { glutMainLoop(); }
 
+	void SetEngine(PhysicsEngine& _engine)
+	{
+		engine = &_engine;
+	}
+
 	static void renderCallback()
 	{
 		PxScene* scene;
 		PxGetPhysics().getScenes(&scene,1);
 
-		//	stepPhysics(true);
+		//physics step
 		scene->simulate(PxReal(1./60.));
 		scene->fetchResults(true);
-
 
 		Snippets::startRender(sCamera->getEye(), sCamera->getDir());
 
@@ -48,6 +56,10 @@ public:
 		}
 
 		Snippets::finishRender();
+
+		int timer = glutGet(GLUT_ELAPSED_TIME);
+
+		std::cout << "dt: " << timer << std::endl;
 	}
 
 	static void motionCallback(int x, int y)
@@ -57,11 +69,22 @@ public:
 
 	static void keyboardCallback(unsigned char key, int x, int y)
 	{
-		if(key==27)
+		if (key == 27)
 			exit(0);
 
-		if(!sCamera->handleKey(key, x, y))
-			;//		keyPress(key, sCamera->getTransform());
+		switch (toupper(key))
+		{
+		case 'W':
+			sCamera->MoveForward(); break;
+		case 'S':
+			sCamera->MoveBackward(); break;
+		case 'A':
+			sCamera->MoveLeft(); break;
+		case 'D':
+			sCamera->MoveRight(); break;
+		default:
+			break;
+		}
 	}
 
 	static void mouseCallback(int button, int state, int x, int y)
@@ -76,6 +99,7 @@ public:
 
 	static void exitCallback(void)
 	{
+		delete engine;
 		delete sCamera;
 	}
 };
