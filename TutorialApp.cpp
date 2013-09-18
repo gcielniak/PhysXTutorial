@@ -14,10 +14,6 @@ int main()
 	try { physics_engine.Init(); }
 	catch (Exception exc) { cerr << exc.what() << endl; exit(1); }
 
-	//Init scene
-	PxRigidDynamic* sphere = physics_engine.AddSphere(PxVec3(0.0f, 10.0f, 0.0f));
-	PxRigidStatic* plane = physics_engine.AddStaticPlaneXZ();
-
 	VisualDebugger debugger;
 
 	debugger.SetEngine(physics_engine);

@@ -180,6 +180,10 @@
 				RelativePath=".\TutorialApp.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\VisualDebugger.cpp"
+				>
+			</File>
 			<Filter
 				Name="SnippetRender"
 				>

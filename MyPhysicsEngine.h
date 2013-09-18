@@ -4,6 +4,9 @@
 
 class MyPhysicsEngine : public PhysicsEngine
 {
+	PxRigidDynamic* sphere;
+	PxRigidStatic* plane;
+
 public:
 	PxRigidDynamic* AddSphere(PxVec3 position, PxReal radius=1.0, PxReal mass=1.0)
 	{		
@@ -34,5 +37,17 @@ public:
 		PxRigidBodyExt::setMassAndUpdateInertia(*box, mass);
 		scene->addActor(*box);
 		return box;
+	}
+
+	virtual void InitScene()
+	{
+		//Init scene
+		sphere = AddSphere(PxVec3(0.0f, 10.0f, 0.0f));
+		plane = AddStaticPlaneXZ();
+	}
+
+	virtual void UpdateScene()
+	{
+		sphere->setGlobalPose(PxTransform(sphere->getGlobalPose().p + PxVec3(0.0f,0.0f,0.01f)));
 	}
 };

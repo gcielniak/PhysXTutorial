@@ -7,6 +7,7 @@
 
 using namespace physx;
 
+int timer_start;
 PhysicsEngine* engine;
 
 class VisualDebugger
@@ -14,7 +15,7 @@ class VisualDebugger
 	static Snippets::Camera* sCamera;
 
 public:
-	void Init(const std::string window_name)
+	static void Init(const std::string window_name)
 	{
 		Snippets::setRenderQuality(40);
 		Snippets::setupDefaultWindow(window_name.c_str());
@@ -27,13 +28,15 @@ public:
 		glutMotionFunc(motionCallback);
 		atexit(exitCallback);
 		motionCallback(0,0);
+		timer_start = glutGet(GLUT_ELAPSED_TIME);
 	}
 
-	void Start() { glutMainLoop(); }
+	static void Start() { glutMainLoop(); }
 
-	void SetEngine(PhysicsEngine& _engine)
+	static void SetEngine(PhysicsEngine& _engine)
 	{
 		engine = &_engine;
+		engine->InitScene();
 	}
 
 	static void renderCallback()
@@ -57,9 +60,7 @@ public:
 
 		Snippets::finishRender();
 
-		int timer = glutGet(GLUT_ELAPSED_TIME);
-
-		std::cout << "dt: " << timer << std::endl;
+		engine->UpdateScene();
 	}
 
 	static void motionCallback(int x, int y)
@@ -85,6 +86,9 @@ public:
 		default:
 			break;
 		}
+		int time_now = glutGet(GLUT_ELAPSED_TIME);
+		std::cout << "dt: " << time_now - timer_start << std::endl;
+		timer_start = time_now;
 	}
 
 	static void mouseCallback(int button, int state, int x, int y)
@@ -99,9 +103,8 @@ public:
 
 	static void exitCallback(void)
 	{
-		delete engine;
 		delete sCamera;
 	}
 };
 
-Snippets::Camera* VisualDebugger::sCamera = new Snippets::Camera(PxVec3(0.0f, 10.0f, 20.0f), PxVec3(0.0f,-0.5f,-1.0f));
+Snippets::Camera* VisualDebugger::sCamera = new Snippets::Camera(PxVec3(0.0f, 5.0f, 30.0f), PxVec3(0.0f,-5.0f,-30.0f));
