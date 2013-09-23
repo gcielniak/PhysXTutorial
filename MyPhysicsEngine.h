@@ -1,53 +1,87 @@
 #pragma once
 
 #include "PhysicsEngine.h"
+#include <iostream>
 
-class MyPhysicsEngine : public PhysicsEngine
+namespace PhysicsEngine
 {
-	PxRigidDynamic* sphere;
-	PxRigidStatic* plane;
+	using namespace std;
 
-public:
-	PxRigidDynamic* AddSphere(PxVec3 position, PxReal radius=1.0, PxReal mass=1.0)
-	{		
-		//sphere
-		PxRigidDynamic* sphere = physics->createRigidDynamic(PxTransform(position));
-		sphere->createShape(PxSphereGeometry(radius), *default_material);
-		PxRigidBodyExt::setMassAndUpdateInertia(*sphere, mass);
-		scene->addActor(*sphere);
-		return sphere;
-	}
+	PxVec3 default_color = PxVec3(0.9f,0.1f,0.1f);
 
-	PxRigidStatic* AddStaticPlane(PxVec3 normal, PxReal distance=0.0f)
+	///Box class
+	class Box : public Actor
 	{
-		PxRigidStatic* plane = PxCreatePlane(*physics, PxPlane(normal, distance), *default_material);
-		scene->addActor(*plane);
-		return plane;
-	}
+		PxVec3 dimensions;
+		PxReal density;
+		PxRigidDynamic* actor;
 
-	PxRigidStatic* AddStaticPlaneXZ(PxReal distance=0.0f)
-	{
-		return AddStaticPlane(PxVec3(0.0, 1.0, 0.0), distance);
-	}
+	public:
+		Box(PxTransform pose=PxTransform(PxIdentity), PxVec3 _dimensions=PxVec3(.5f,.5f,.5f), PxReal _density=1.f,
+			PxVec3 color=default_color, std::string name="") 
+			: Actor(pose,color,name), dimensions(_dimensions), density(_density)
+		{ 
+		}
 
-	PxRigidDynamic* AddBox(PxVec3 position, PxReal hx=1.0f, PxReal hy=1.0f, PxReal hz=1.0f, PxReal mass=1.0f)
-	{
-		PxRigidDynamic* box = physics->createRigidDynamic(PxTransform(position));
-		box->createShape(PxBoxGeometry(hx, hy, hz), *default_material);
-		PxRigidBodyExt::setMassAndUpdateInertia(*box, mass);
-		scene->addActor(*box);
-		return box;
-	}
+		virtual PxActor* Create()
+		{
+			actor = GetPhysics()->createRigidDynamic(initial_pose);
+			actor->createShape(PxBoxGeometry(dimensions.x, dimensions.y, dimensions.z), *GetDefaultMaterial());
+			PxRigidBodyExt::setMassAndUpdateInertia(*actor, density);
+			actor->userData = &user_data; //used for visualisation
+			return actor;
+		}
 
-	virtual void InitScene()
-	{
-		//Init scene
-		sphere = AddSphere(PxVec3(0.0f, 10.0f, 0.0f));
-		plane = AddStaticPlaneXZ();
-	}
+		PxRigidDynamic* Get() 
+		{
+			return actor; 
+		}
+	};
 
-	virtual void UpdateScene()
+	///Plane class
+	class Plane : public Actor
 	{
-		sphere->setGlobalPose(PxTransform(sphere->getGlobalPose().p + PxVec3(0.0f,0.0f,0.01f)));
-	}
-};
+		PxVec3 normal;
+		PxReal distance;
+		PxRigidStatic* actor;
+
+	public:
+		Plane(PxVec3 _normal=PxVec3(0.f, 1.f, 0.f), PxReal _distance=0.f, 
+			PxVec3 color=PxVec3(0.2f,0.3f,0.4f), std::string name="") 
+			: Actor(PxTransform(PxIdentity),color,name), normal(_normal), distance(_distance)
+		{
+		}
+
+		virtual PxActor* Create()
+		{
+			actor = PxCreatePlane(*GetPhysics(), PxPlane(normal, distance), *GetDefaultMaterial());
+			actor->userData = &user_data; //used for visualisation
+			return actor;
+		}
+	};
+
+	///Custom scene class
+	class MyScene : public Scene
+	{
+		Plane plane;
+		Box* box;
+
+	public:
+		virtual void CustomInit() 
+		{
+			Add(plane);
+
+			box = new Box(PxTransform(PxVec3(0.f,10.f,0.f)));
+			Add(*box);
+		}
+
+		virtual void CustomUpdate() 
+		{
+			//'visualise' position and velocity of the box
+			PxVec3 position = box->Get()->getGlobalPose().p;
+			PxVec3 velocity = box->Get()->getLinearVelocity();
+//			cout << setiosflags(ios::fixed) << setprecision(2) << "x=" << position.x << ", y=" << position.y << ", z=" << position.z << ",  ";
+//			cout << setiosflags(ios::fixed) << setprecision(2) << "vx=" << velocity.x << ", vy=" << velocity.y << ", vz=" << velocity.z << endl;
+		}
+	};
+}

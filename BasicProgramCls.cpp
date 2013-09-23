@@ -1,6 +1,7 @@
 #include <iostream>
+#include <iomanip>
 #include <windows.h> //delay function
-#include "VisualDebugger.h"
+
 #include "MyPhysicsEngine.h"
 
 using namespace std;
@@ -23,11 +24,16 @@ int main()
 		return 0; 
 	}
 
-	VisualDebugger::SetActiveScene(scene);
-	
-	VisualDebugger::Init("PhysX Tutorial");
+	//set the simulation step to 1/60th of a second
+	PxReal delta_time = 1.f/60.f;
 
-	VisualDebugger::Start();
+	while (!GetAsyncKeyState(VK_ESCAPE))
+	{
+		scene.Update(delta_time);
+		Sleep(100);
+	}
+
+	PxRelease();
 
 	return 0;
 }

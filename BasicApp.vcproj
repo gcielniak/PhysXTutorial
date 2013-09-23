@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9.00"
-	Name="BasicApp"
+	Name="BasicProgram"
 	ProjectGUID="{3BDE2951-63B5-416F-80E6-3037FAD5D6B5}"
 	RootNamespace="PhysXTutorial"
 	Keyword="Win32Proj"
@@ -43,7 +43,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="$(PHYSX_SDK)\Include"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;PX_SUPPORT_VISUAL_DEBUGGER"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -62,11 +62,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="PhysX3CommonDEBUG_x86.lib PhysX3DEBUG_x86.lib PhysX3ExtensionsDEBUG.lib PhysXVisualDebuggerSDKDEBUG.lib"
+				AdditionalDependencies="PhysX3CommonCHECKED_x86.lib PhysX3CHECKED_x86.lib PhysX3ExtensionsCHECKED.lib PhysXVisualDebuggerSDKCHECKED.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="$(PHYSX_SDK)\Lib\win32\"
-				IgnoreDefaultLibraryNames="LIBCMTD"
-				GenerateDebugInformation="true"
+				IgnoreDefaultLibraryNames="LIBCMT"
+				GenerateDebugInformation="false"
 				SubSystem="1"
 				TargetMachine="1"
 			/>
@@ -177,7 +177,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\BasicApp.cpp"
+				RelativePath=".\BasicProgram.cpp"
 				>
 			</File>
 		</Filter>

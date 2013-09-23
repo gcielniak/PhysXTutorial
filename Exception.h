@@ -10,8 +10,10 @@
 class Exception
 {
 	std::string message;
+
 public:
-	virtual const std::string& what() const throw() { return message; }
 	Exception(const std::string s) : message(s) {};
+
+	virtual const std::string& what() const throw() { return message; }
 };
 

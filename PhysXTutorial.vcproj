@@ -43,7 +43,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(PHYSX_SDK)\Include&quot;;.\Graphics\include\win32\GL"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;PX_SUPPORT_VISUAL_DEBUGGER"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -62,7 +62,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="PhysX3CommonDEBUG_x86.lib PhysX3DEBUG_x86.lib PhysX3ExtensionsDEBUG.lib PhysXVisualDebuggerSDKDEBUG.lib"
+				AdditionalDependencies="PhysX3DEBUG_x86.lib PhysX3CommonDEBUG_x86.lib PhysXVisualDebuggerSDKDEBUG.lib PhysX3ExtensionsDEBUG.lib"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="&quot;$(PHYSX_SDK)\Lib\win32\&quot;;.\Graphics\lib\win32\glut"
 				IgnoreDefaultLibraryNames="LIBCMTD"
@@ -177,31 +177,31 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\TutorialApp.cpp"
+				RelativePath=".\Camera.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\VisualDebugger.cpp"
+				RelativePath=".\PhysicsEngine.cpp"
 				>
 			</File>
-			<Filter
-				Name="SnippetRender"
+			<File
+				RelativePath=".\Renderer.cpp"
 				>
-				<File
-					RelativePath=".\SnippetRender\SnippetCamera.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\SnippetRender\SnippetRender.cpp"
-					>
-				</File>
-			</Filter>
+			</File>
+			<File
+				RelativePath=".\TutorialApp.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath=".\Camera.h"
+				>
+			</File>
 			<File
 				RelativePath=".\Exception.h"
 				>
@@ -215,21 +215,17 @@
 				>
 			</File>
 			<File
+				RelativePath=".\Renderer.h"
+				>
+			</File>
+			<File
+				RelativePath=".\UserData.h"
+				>
+			</File>
+			<File
 				RelativePath=".\VisualDebugger.h"
 				>
 			</File>
-			<Filter
-				Name="SnippetRender"
-				>
-				<File
-					RelativePath=".\SnippetRender\SnippetCamera.h"
-					>
-				</File>
-				<File
-					RelativePath=".\SnippetRender\SnippetRender.h"
-					>
-				</File>
-			</Filter>
 		</Filter>
 		<Filter
 			Name="Resource Files"

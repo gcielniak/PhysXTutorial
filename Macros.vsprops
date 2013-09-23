@@ -6,6 +6,6 @@
 	>
 	<UserMacro
 		Name="PHYSX_SDK"
-		Value="C:\Program Files (x86)\NVIDIA Corporation\NVIDIA PhysX SDK\3.2.4\"
+		Value="C:\Program Files (x86)\NVIDIA Corporation\NVIDIA PhysX SDK\3.3.0\"
 	/>
 </VisualStudioPropertySheet>
