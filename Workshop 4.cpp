@@ -1,3 +1,5 @@
+#pragma warning(disable: 4099)
+
 #include <iostream>
 #include "VisualDebugger.h"
 
@@ -7,7 +9,7 @@ int main()
 {
 	try 
 	{ 
-		VisualDebugger::Init("PhysX Tutorial", 512, 512); 
+		VisualDebugger::Init("PhysX Tutorial", 800, 800); 
 	}
 	catch (Exception exc) 
 	{ 

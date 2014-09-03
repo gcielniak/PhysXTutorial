@@ -84,12 +84,15 @@ namespace PhysicsEngine
 
 	///Actor methods
 	Actor::Actor(const PxTransform& _pose, const PxVec3& _color)
-		: pose(_pose), color(_color)
+		: pose(_pose), color(_color), actor(0)
 	{
 	}
 
-	PxActor* Actor::Get()
+	PxActor* Actor::PxActor()
 	{
+		if (!actor)
+			Create();
+
 		return actor;
 	}
 
@@ -138,8 +141,7 @@ namespace PhysicsEngine
 
 	void Scene::Add(Actor& actor)
 	{
-		actor.Create();
-		px_scene->addActor(*actor.Get());
+		px_scene->addActor(*actor.PxActor());
 	}
 
 	PxScene* Scene::Get() 

@@ -83,7 +83,7 @@ namespace PhysicsEngine
 		}
 	};
 
-	static const PxVec3 pyramid_verts[] = {PxVec3(0,1,0),PxVec3(1,0,0),PxVec3(-1,0,0),PxVec3(0,0,1),PxVec3(0,0,-1)};
+	static const PxVec3 pyramid_verts[] = {PxVec3(0,1,0), PxVec3(1,0,0), PxVec3(-1,0,0), PxVec3(0,0,1), PxVec3(0,0,-1)};
 
 	///The Pyramid class demonstrating convex meshes
 	class Pyramid : public Actor
@@ -191,6 +191,34 @@ namespace PhysicsEngine
 		PxShape* GetShape()
 		{
 			return shape;
+		}
+	};
+
+	class Box2 : public Actor
+	{
+		PxReal density;
+		const PxMaterial* material;
+
+	public:
+		Box2(PxTransform pose=PxTransform(PxIdentity), PxReal _density=1.f,	const PxVec3& _color=PxVec3(.9f,0.f,0.f), const PxMaterial* _material=GetDefaultMaterial())
+			: Actor(pose, _color), density(_density), material(_material)
+		{
+		}
+
+		virtual void Create()
+		{
+			PxRigidDynamic* box = GetPhysics()->createRigidDynamic(pose);
+			PxShape* shape1 = box->createShape(PxBoxGeometry(PxVec3(.5f,.5f,.5f)), *material);
+			PxShape* shape2 = box->createShape(PxBoxGeometry(PxVec3(.5f,.5f,.5f)), *material);
+			shape2->setLocalPose(PxTransform(PxVec3(2.f,.0f,.0f)));
+			PxRigidBodyExt::setMassAndUpdateInertia(*box, density);
+			actor = box;
+			actor->userData = &color; //pass color parameter to renderer
+		}
+
+		PxRigidDynamic* Get() 
+		{
+			return (PxRigidDynamic*)actor; 
 		}
 	};
 
@@ -322,7 +350,8 @@ namespace PhysicsEngine
 	class MyScene : public Scene
 	{
 		Plane* plane;
-		Box* box;
+		Box2* box;
+		Capsule* capsule;
 		Cloth* cloth;
 		MySimulationEventCallback* my_callback;
 
@@ -354,13 +383,16 @@ namespace PhysicsEngine
 			px_scene->setSimulationEventCallback(my_callback);
 
 			plane = new Plane();
-			Add(*plane);
+			Add(plane);
 
-			cloth = new Cloth(PxTransform(PxVec3(-4.f,9.f,0.f)), PxVec2(8.f,8.f), 40, 40);
-			Add(*cloth);
+//			cloth = new Cloth(PxTransform(PxVec3(-4.f,9.f,0.f)), PxVec2(8.f,8.f), 40, 40);
+//			Add(*cloth);
 
-			box = new Box(PxTransform(PxVec3(0.f,2.f,0.f)),PxVec3(2.f,2.f,2.f));
-			Add(*box);
+			box = new Box2(PxTransform(PxVec3(.0f,10.f,.0f)),1.f,PxVec3(.9,.0f,.0f));
+//			Add(box);
+
+			capsule = new Capsule(PxTransform(PxVec3(.0f,10.f,.0f)));
+			Add(capsule);
 
 			//setting custom cloth parameters
 			//cloth->Get()->setStretchConfig(PxClothFabricPhaseType::eBENDING, PxClothStretchConfig(1.f));
@@ -369,6 +401,11 @@ namespace PhysicsEngine
 		//Custom udpate function
 		virtual void CustomUpdate() 
 		{
+			
+			PxTransform t = capsule->PxRigidActor()->getGlobalPose();
+			t.q *= PxQuat(.01f,PxVec3(1.0f,1.f,1.0f));
+			capsule->PxRigidActor()->setGlobalPose(t);
+
 			///an example showing how to interface the collision callbacks with the simulation
 			if (my_callback->trigger)
 			{
@@ -380,12 +417,14 @@ namespace PhysicsEngine
 		void ExampleKeyReleaseHandler()
 		{
 			cerr << "I am realeased!" << endl;
+			capsule->Color(PxVec3(.9f,.0f,.0f));
 		}
 
 		/// An example use of key presse handling
 		void ExampleKeyPressHandler()
 		{
 			cerr << "I am pressed!" << endl;
+			capsule->Color(PxVec3(.9f,.9f,.0f));
 		}
 	};
 }

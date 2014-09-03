@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="PhysicsEngine.cpp" />
+    <ClCompile Include="VisualDebugger.cpp" />
+    <ClCompile Include="Workshop 4.cpp" />
+    <ClCompile Include="Extras\Camera.cpp" />
+    <ClCompile Include="Extras\GLFontRenderer.cpp" />
+    <ClCompile Include="Extras\Renderer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Exception.h" />
+    <ClInclude Include="MyPhysicsEngine.h" />
+    <ClInclude Include="PhysicsEngine.h" />
+    <ClInclude Include="VisualDebugger.h" />
+    <ClInclude Include="Extras\Camera.h" />
+    <ClInclude Include="Extras\GLFontData.h" />
+    <ClInclude Include="Extras\GLFontRenderer.h" />
+    <ClInclude Include="Extras\HUD.h" />
+    <ClInclude Include="Extras\Renderer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
+  </ItemGroup>
+</Project>

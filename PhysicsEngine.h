@@ -35,14 +35,29 @@ namespace PhysicsEngine
 		PxVec3 color;
 		PxActor* actor;
 
-	public:
-		///a constructor
-		Actor(const PxTransform& pose, const PxVec3& color);
-		
 		///a pure virtual function that creates the actor following your implementation
 		virtual void Create()=0;
 
-		PxActor* Get();
+	public:
+		///Constructor
+		Actor(const PxTransform& pose, const PxVec3& color);
+		
+		///Pointer to PxActor
+		PxActor* PxActor();
+
+		PxRigidActor* PxRigidActor() { return (physx::PxRigidActor*)PxActor(); }
+
+		///Get color
+		const PxVec3& Color()
+		{
+			return color;
+		}
+		
+		//Set color
+		void Color(PxVec3 new_color)
+		{
+			color = new_color;
+		}
 	};
 
 	///Generic scene class
@@ -73,6 +88,8 @@ namespace PhysicsEngine
 
 		///Add actors
 		void Add(Actor& actor);
+		
+		void Add(Actor* actor) { Add(*actor); };
 
 		///Get the PxScene object
 		PxScene* Get();
