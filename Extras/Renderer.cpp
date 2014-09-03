@@ -1,5 +1,7 @@
 #include "Renderer.h"
-#include "UserData.h"
+#include <iostream>
+
+using namespace std;
 
 namespace VisualDebugger
 {
@@ -7,16 +9,13 @@ namespace VisualDebugger
 	{
 
 		const int MAX_NUM_CONVEXMESH_TRIANGLES = 1024;
-
-		static PxU32 gConvexMeshTriIndices[3*MAX_NUM_CONVEXMESH_TRIANGLES];
-
 		const int MAX_NUM_ACTOR_SHAPES = 128;
-
-		bool show_shadows = true;
-
-		PxVec3 default_color = PxVec3(0.5f, 0.6f, 0.7f);
+		PxVec3 default_color = PxVec3(0.5f, 0.5f, 0.5f);
 
 		int render_detail = 10;
+		bool show_shadows = true;
+
+		static PxU32 gConvexMeshTriIndices[3*MAX_NUM_CONVEXMESH_TRIANGLES];
 
 		static float gPlaneData[]={
 			-1.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
@@ -118,6 +117,34 @@ namespace VisualDebugger
 			1.000000f,0.000000f,0.000000f,0.000000f,-1.000000f,0.000000f,
 		};
 
+		void BuildNormals(const PxVec3* PX_RESTRICT vertices, PxU32 numVerts, const PxU16* PX_RESTRICT faces, PxU32 numFaces, PxVec3* PX_RESTRICT normals)
+		{
+			memset(normals, 0, sizeof(PxVec3)*numVerts);
+			
+			const PxU32 numIndices = numFaces*3;
+
+			// accumulate area weighted face normals in each vertex
+			for (PxU32 t=0; t < numIndices; t+=3)
+			{
+				PxU16 i = faces[t];
+				PxU16 j = faces[t+1];
+				PxU16 k = faces[t+2];
+
+				PxVec3 e1 = vertices[j]-vertices[i];
+				PxVec3 e2 = vertices[k]-vertices[i];
+
+				PxVec3 n = e2.cross(e1);
+
+				normals[i] += n;
+				normals[j] += n;
+				normals[k] += n;
+			}
+
+			// average
+			for (PxU32 i=0; i < numVerts; ++i)
+				normals[i].normalize();
+		}
+
 		void RenderGeometry(const PxGeometryHolder& h)
 		{
 			switch(h.getType())
@@ -153,23 +180,23 @@ namespace VisualDebugger
 
 					//Sphere
 					glPushMatrix();
-					glTranslatef(0.0f, halfHeight, 0.0f);
+					glTranslatef(halfHeight,0.0f, 0.0f);
 					glScalef(radius,radius,radius);
 					glutSolidSphere(1, render_detail, render_detail);		
 					glPopMatrix();
 
 					//Sphere
 					glPushMatrix();
-					glTranslatef(0.0f,-halfHeight, 0.0f);
+					glTranslatef(-halfHeight,0.0f,0.0f);
 					glScalef(radius,radius,radius);
 					glutSolidSphere(1, render_detail, render_detail);		
 					glPopMatrix();
 
 					//Cylinder
 					glPushMatrix();
-					glTranslatef(0.0f,halfHeight, 0.0f);
-					glScalef(radius,2.0f*halfHeight,radius);
-					glRotatef(90.0f,1.0f,0.0f,0.0f);
+					glTranslatef(-halfHeight,0.0f,0.0f);
+					glScalef(2.0f*halfHeight,radius,radius);
+					glRotatef(90.0f,0.0f,1.0f,0.0f);
 					glEnableClientState(GL_VERTEX_ARRAY);
 					glEnableClientState(GL_NORMAL_ARRAY);
 					glVertexPointer(3, GL_FLOAT, 2*3*sizeof(float), gCylinderData);
@@ -260,16 +287,15 @@ namespace VisualDebugger
 		void Init()
 		{
 			// Setup default render states
-			glClearColor(default_color.x, default_color.y, default_color.z, 1.0);
 			glEnable(GL_DEPTH_TEST);
 			glEnable(GL_COLOR_MATERIAL);
 
 			// Setup lighting
 			glEnable(GL_LIGHTING);
-			PxReal ambientColor[]	= { 0.5f, 0.5f, 0.5f, 0.0f };
-			PxReal diffuseColor[]	= { 1.0f, 1.0f, 1.0f, 0.0f };		
-			PxReal specularColor[]	= { 0.0f, 0.0f, 0.0f, 0.0f };		
-			PxReal position[]		= { 100.0f, 100.0f, 400.0f, 1.0f };		
+			PxReal ambientColor[]	= { .5f, .5f, .5f, 1.f };
+			PxReal diffuseColor[]	= { 1.f, 1.f, 1.f, 1.f };		
+			PxReal specularColor[]	= { 1.f, 1.f, 1.f, 1.f };		
+			PxReal position[]		= { 100.f, 100.f, 200.f, 1.0f };		
 			glLightfv(GL_LIGHT0, GL_AMBIENT, ambientColor);
 			glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseColor);
 			glLightfv(GL_LIGHT0, GL_SPECULAR, specularColor);
@@ -291,19 +317,6 @@ namespace VisualDebugger
 			gluLookAt(cameraEye.x, cameraEye.y, cameraEye.z, cameraEye.x + cameraDir.x, cameraEye.y + cameraDir.y, cameraEye.z + cameraDir.z, 0.0f, 1.0f, 0.0f);
 		}
 
-		void AdjustSaturation(PxVec3& color, float value)
-		{
-			const float Pr = .299;
-			const float Pg = .587;
-			const float Pb = .114;
-
-			double P = sqrt(color.x*color.x*Pr + color.y*color.y*Pg + color.z*color.z*Pb);
-
-			color.x = P + (color.x-P)*value;
-			color.y = P + (color.y-P)*value;
-			color.z = P + (color.z-P)*value;
-		}
-
 		void Render(PxRigidActor** actors, const PxU32 numActors)
 		{
 			PxVec3 shadow_color = default_color*0.6;
@@ -319,10 +332,11 @@ namespace VisualDebugger
 				{
 					PxTransform pose = PxShapeExt::getGlobalPose(*shapes[j], *actors[i]);
 					PxGeometryHolder h = shapes[j]->getGeometry();
+					//move the plane slightly down to avoid visual artefacts
 					if (h.getType() == PxGeometryType::ePLANE)
 					{
-						pose.p += PxVec3(0,-0.01,0);
 						pose.q *= PxQuat(PxHalfPi, PxVec3(0.0f, 0.0f, 1.0f));
+						pose.p += PxVec3(0,-0.01,0);
 					}
 
 					PxMat44 shapePose(pose);
@@ -335,17 +349,23 @@ namespace VisualDebugger
 
 					if (actors[i]->userData)
 					{
-						actor_color = ((UserData*)actors[i]->userData)->color;
+						actor_color = *((PxVec3*)actors[i]->userData);
 						if (h.getType() == PxGeometryType::ePLANE)
+						{
 							shadow_color = actor_color*0.6;
+						}
 					}
 
-					if(sleeping)
-						AdjustSaturation(actor_color, 0.7);
+					if (h.getType() == PxGeometryType::ePLANE)
+						glDisable(GL_LIGHTING);
 
 					glColor4f(actor_color.x, actor_color.y, actor_color.z, 1.0f);
 
 					RenderGeometry(h);
+
+					if (h.getType() == PxGeometryType::ePLANE)
+						glEnable(GL_LIGHTING);
+
 					glPopMatrix();
 
 					if(show_shadows && (h.getType() != PxGeometryType::ePLANE))
@@ -361,6 +381,33 @@ namespace VisualDebugger
 						glEnable(GL_LIGHTING);
 						glPopMatrix();
 					}
+				}
+			}
+		}
+
+		void Render(PxActor** actors, const PxU32 numActors)
+		{
+			for(PxU32 i = 0; i < numActors; i++)
+			{
+				if (actors[i]->isCloth())
+				{
+					PxCloth* cloth = (PxCloth*)actors[i];
+					
+					//get verts data
+					cloth->lockParticleData();
+					PxClothParticleData* readData = cloth->lockParticleData();
+					if (!readData)
+						break;
+
+					// copy vertex positions
+					PxU32 numVerts = cloth->getNbParticles();
+					PxVec3* verts = new PxVec3[numVerts];
+					for (PxU32 j = 0; j < numVerts; j++)
+						verts[j] = readData->particles[j].pos;
+
+					readData->unlock();
+
+					//display vertices ?
 				}
 			}
 		}
@@ -381,5 +428,136 @@ namespace VisualDebugger
 		}
 
 		bool ShowShadows() { return show_shadows; }
+
+		void RenderBuffer(float* pVertList, float* pColorList, int type, int num)
+		{
+			glEnableClientState(GL_VERTEX_ARRAY);
+			glVertexPointer(3,GL_FLOAT, 0, pVertList);
+			glEnableClientState(GL_COLOR_ARRAY);
+			glColorPointer(4, GL_FLOAT, 0, pColorList);
+			glDrawArrays(type, 0, num);
+			glDisableClientState(GL_COLOR_ARRAY);
+			glDisableClientState(GL_VERTEX_ARRAY);
+		}
+
+		void Render(const PxRenderBuffer& data)
+		{
+			glLineWidth(1.0f);
+
+			unsigned int NbPoints = data.getNbPoints();
+			if(NbPoints)
+			{
+				float* pVertList = new float[NbPoints*3];
+				float* pColorList = new float[NbPoints*4];
+				int vertIndex = 0;
+				int colorIndex = 0;
+				const physx::PxDebugPoint* Points = data.getPoints();
+				while(NbPoints--)
+				{
+					pVertList[vertIndex++] = Points->pos.x;
+					pVertList[vertIndex++] = Points->pos.y;
+					pVertList[vertIndex++] = Points->pos.z;
+					pColorList[colorIndex++] = (float)((Points->color>>16)&0xff)/255.0f;
+					pColorList[colorIndex++] = (float)((Points->color>>8)&0xff)/255.0f;
+					pColorList[colorIndex++] = (float)(Points->color&0xff)/255.0f;
+					pColorList[colorIndex++] = 1.0f;
+					Points++;
+				}
+
+				RenderBuffer(pVertList, pColorList, GL_POINTS, data.getNbPoints());
+
+				delete[] pVertList;
+				delete[] pColorList;
+			}
+
+			unsigned int NbLines = data.getNbLines();
+			if(NbLines)
+			{
+				float* pVertList = new float[NbLines*3*2];
+				float* pColorList = new float[NbLines*4*2];
+				int vertIndex = 0;
+				int colorIndex = 0;
+				const PxDebugLine* Lines = data.getLines();
+				while(NbLines--)
+				{
+					pVertList[vertIndex++] = Lines->pos0.x;
+					pVertList[vertIndex++] = Lines->pos0.y;
+					pVertList[vertIndex++] = Lines->pos0.z;
+					pColorList[colorIndex++] = (float)((Lines->color0>>16)&0xff)/255.0f;
+					pColorList[colorIndex++] = (float)((Lines->color0>>8)&0xff)/255.0f;
+					pColorList[colorIndex++] = (float)(Lines->color0&0xff)/255.0f;
+					pColorList[colorIndex++] = 1.0f;
+
+					pVertList[vertIndex++] = Lines->pos1.x;
+					pVertList[vertIndex++] = Lines->pos1.y;
+					pVertList[vertIndex++] = Lines->pos1.z;
+					pColorList[colorIndex++] = (float)((Lines->color1>>16)&0xff)/255.0f;
+					pColorList[colorIndex++] = (float)((Lines->color1>>8)&0xff)/255.0f;
+					pColorList[colorIndex++] = (float)(Lines->color1&0xff)/255.0f;
+					pColorList[colorIndex++] = 1.0f;
+
+					Lines++;
+				}
+
+				RenderBuffer(pVertList, pColorList, GL_LINES, data.getNbLines()*2);
+
+				delete[] pVertList;
+				delete[] pColorList;
+			}
+
+			unsigned int NbTris = data.getNbTriangles();
+			if(NbTris)
+			{
+				float* pVertList = new float[NbTris*3*3];
+				float* pColorList = new float[NbTris*4*3];
+				int vertIndex = 0;
+				int colorIndex = 0;
+				const PxDebugTriangle* Triangles = data.getTriangles();
+				while(NbTris--)
+				{
+					pVertList[vertIndex++] = Triangles->pos0.x;
+					pVertList[vertIndex++] = Triangles->pos0.y;
+					pVertList[vertIndex++] = Triangles->pos0.z;
+
+					pVertList[vertIndex++] = Triangles->pos1.x;
+					pVertList[vertIndex++] = Triangles->pos1.y;
+					pVertList[vertIndex++] = Triangles->pos1.z;
+
+					pVertList[vertIndex++] = Triangles->pos2.x;
+					pVertList[vertIndex++] = Triangles->pos2.y;
+					pVertList[vertIndex++] = Triangles->pos2.z;
+
+					pColorList[colorIndex++] = (float)((Triangles->color0>>16)&0xff)/255.0f;
+					pColorList[colorIndex++] = (float)((Triangles->color0>>8)&0xff)/255.0f;
+					pColorList[colorIndex++] = (float)(Triangles->color0&0xff)/255.0f;
+					pColorList[colorIndex++] = 1.0f;
+
+					pColorList[colorIndex++] = (float)((Triangles->color1>>16)&0xff)/255.0f;
+					pColorList[colorIndex++] = (float)((Triangles->color1>>8)&0xff)/255.0f;
+					pColorList[colorIndex++] = (float)(Triangles->color1&0xff)/255.0f;
+					pColorList[colorIndex++] = 1.0f;
+
+					pColorList[colorIndex++] = (float)((Triangles->color2>>16)&0xff)/255.0f;
+					pColorList[colorIndex++] = (float)((Triangles->color2>>8)&0xff)/255.0f;
+					pColorList[colorIndex++] = (float)(Triangles->color2&0xff)/255.0f;
+					pColorList[colorIndex++] = 1.0f;
+
+					Triangles++;
+				}
+
+				RenderBuffer(pVertList, pColorList, GL_TRIANGLES, data.getNbTriangles()*3);
+
+				delete[] pVertList;
+				delete[] pColorList;
+			}
+		}
+
+		void RenderText(const std::string& text, const physx::PxVec2& location, 
+			const PxVec3& color, PxReal size)
+		{
+			glColor4f(color.x, color.y, color.z, 1.f);
+			GLFontRenderer::setScreenResolution(glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT));
+			GLFontRenderer::print(location.x, location.y, size, text.c_str());
+		}
 	}
 }

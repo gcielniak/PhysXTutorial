@@ -1,8 +1,8 @@
 #pragma once
 
+#include <vector>
 #include "PxPhysicsAPI.h"
 #include "Exception.h"
-#include "UserData.h"
 
 namespace PhysicsEngine
 {
@@ -17,38 +17,46 @@ namespace PhysicsEngine
 	///Get the PxPhysics object
 	PxPhysics* GetPhysics();
 
+	///Get the cooking object
+	PxCooking* GetCooking();
+
 	///Get default material
 	PxMaterial* GetDefaultMaterial();
 
 	///Create a material
-	PxMaterial* CreateMaterial(PxReal sf, PxReal df, PxReal cr);
+	PxMaterial* CreateMaterial(PxReal sf=0.f, PxReal df=0.f, PxReal cr=0.f);
 
-	///Abstract actor class
+	///Abstract Actor class
 	///Inherit from this class to create your own actors
 	class Actor
 	{
 	protected:
-		//data storing additional info about the actor
-		UserData user_data;
-		//initial pose
-		PxTransform initial_pose;
+		PxTransform pose;
+		PxVec3 color;
+		PxActor* actor;
 
 	public:
 		///a constructor
-		Actor(PxTransform pose, PxVec3 color, std::string name) ;
+		Actor(const PxTransform& pose, const PxVec3& color);
 		
-		///pure virtual function that creates the actor
-		virtual PxActor* Create()=0;
+		///a pure virtual function that creates the actor following your implementation
+		virtual void Create()=0;
+
+		PxActor* Get();
 	};
 
 	///Generic scene class
 	class Scene
 	{
 	protected:
-		//PhysX scene objects
+		//a PhysX scene object
 		PxScene* px_scene;
 		//pause simulation
-		bool pause; 
+		bool pause;
+		//selected dynamic actor on the scene
+		PxRigidDynamic* selected_actor;
+		//original and modified colour of the selected actor
+		PxVec3 sactor_color, sactor_color_orig;
 
 	public:
 		///Init the scene
@@ -75,7 +83,20 @@ namespace PhysicsEngine
 		///Set pause
 		void Pause(bool value);
 
-		///Get pause state
+		///Get pause
 		bool Pause();
+
+		///Get the selected dynamic actor on the scene
+		PxRigidDynamic* GetSelectedActor();
+
+		///Switch to the next dynamic actor
+		void SelectNextActor();
+
+		///a list with all actors
+		std::vector<PxRigidActor*> GetAllActors();
+
+		///a list with all cloth actors
+		std::vector<PxActor*> GetAllCloths();
 	};
 }
+
