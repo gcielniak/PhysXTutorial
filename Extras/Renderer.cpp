@@ -26,7 +26,7 @@ namespace VisualDebugger
 		void BuildNormals(const PxVec3* PX_RESTRICT vertices, PxU32 numVerts, const PxU16* PX_RESTRICT faces, PxU32 numFaces, PxVec3* PX_RESTRICT normals)
 		{
 			memset(normals, 0, sizeof(PxVec3)*numVerts);
-			
+
 			const PxU32 numIndices = numFaces*3;
 
 			// accumulate area weighted face normals in each vertex
@@ -146,6 +146,8 @@ namespace VisualDebugger
 						glDrawElements(GL_TRIANGLES, numTotalTriangles*3, GL_UNSIGNED_INT, gConvexMeshTriIndices);
 						glDisableClientState(GL_VERTEX_ARRAY);
 					}
+
+					//add normals
 				}
 				break;
 			default:
@@ -189,10 +191,10 @@ namespace VisualDebugger
 
 			// Setup lighting
 			glEnable(GL_LIGHTING);
-			PxReal ambientColor[]	= { .5f, .5f, .5f, 1.f };
+			PxReal ambientColor[]	= { .25f, .25f, .25f, 1.f };
 			PxReal diffuseColor[]	= { 1.f, 1.f, 1.f, 1.f };		
 			PxReal specularColor[]	= { 1.f, 1.f, 1.f, 1.f };		
-			PxReal position[]		= { 100.f, 100.f, 200.f, 1.0f };		
+			PxReal position[]		= { -100.f, 100.f, 200.f, 1.0f };		
 			glLightfv(GL_LIGHT0, GL_AMBIENT, ambientColor);
 			glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseColor);
 			glLightfv(GL_LIGHT0, GL_SPECULAR, specularColor);
@@ -289,7 +291,12 @@ namespace VisualDebugger
 				if (actors[i]->isCloth())
 				{
 					PxCloth* cloth = (PxCloth*)actors[i];
-					
+
+					PxClothMeshDesc* mesh_desc = (PxClothMeshDesc*)cloth->userData;
+
+					PxU32 quad_count = mesh_desc->quads.count;
+					PxU32* quads = (PxU32*)mesh_desc->quads.data;
+
 					//get verts data
 					cloth->lockParticleData();
 					PxClothParticleData* readData = cloth->lockParticleData();
@@ -299,12 +306,53 @@ namespace VisualDebugger
 					// copy vertex positions
 					PxU32 numVerts = cloth->getNbParticles();
 					PxVec3* verts = new PxVec3[numVerts];
+					PxVec3* norms = new PxVec3[numVerts];
 					for (PxU32 j = 0; j < numVerts; j++)
 						verts[j] = readData->particles[j].pos;
 
 					readData->unlock();
 
-					//display vertices ?
+					//Compute normals
+
+					for (PxU32 i = 0; i < quad_count*4; i+=4)
+					{
+						PxVec3 v1 = verts[quads[i]];
+						PxVec3 v2 = verts[quads[i+1]];
+						PxVec3 v3 = verts[quads[i+2]];
+						PxVec3 n = (v2-v1).cross(v3-v1)/4;
+
+						norms[quads[i]] += n;
+						norms[quads[i+1]] += n;
+						norms[quads[i+2]] += n;
+						norms[quads[i+3]] += n;
+					}
+
+					for (PxU32 i = 0; i < numVerts; i++)
+						norms[i].normalize();
+
+					PxTransform pose = cloth->getGlobalPose();
+					PxMat44 shapePose(pose);
+
+
+					glEnable(GL_LIGHTING);
+
+					glPushMatrix();						
+					glMultMatrixf((float*)&shapePose);
+					glColor4f(0.9f, 0.f, 0.9f, 1.0f);
+
+					glEnableClientState(GL_VERTEX_ARRAY);
+					glEnableClientState(GL_NORMAL_ARRAY);
+
+					glVertexPointer(3, GL_FLOAT, sizeof(PxVec3), verts);
+					glNormalPointer(GL_FLOAT, sizeof(PxVec3), norms);
+
+					glDrawElements(GL_QUADS, quad_count*4, GL_UNSIGNED_INT, quads);
+
+					glDisableClientState(GL_NORMAL_ARRAY);
+					glDisableClientState(GL_VERTEX_ARRAY);
+
+					glPopMatrix();
+
 				}
 			}
 		}

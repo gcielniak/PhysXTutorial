@@ -15,6 +15,8 @@ namespace PhysicsEngine
 		bool fix_top;
 
 	public:
+		PxClothMeshDesc meshDesc;
+
 		//constructor
 		Cloth(PxTransform pose=PxTransform(PxIdentity), const PxVec2& _size=PxVec2(1.f,1.f), PxU32 _width=1, PxU32 _height=1, bool _fix_top = true, const PxVec3& _color=PxVec3(.9f,0.f,0.f))
 			: Actor(pose, _color), size(_size), width(_width), height(_height), fix_top(_fix_top)
@@ -52,7 +54,6 @@ namespace PhysicsEngine
 			}
 
 			//init cloth mesh description
-			PxClothMeshDesc meshDesc;
 			meshDesc.points.data = vertices;
 			meshDesc.points.count = (width+1)*(height+1);
 			meshDesc.points.stride = sizeof(PxClothParticle);
@@ -74,7 +75,7 @@ namespace PhysicsEngine
 			cloth->setClothFlag(PxClothFlag::eSCENE_COLLISION, true);
 
 			actor = cloth;
-			actor->userData = &color; //pass a color parameter to the renderer
+			actor->userData = &meshDesc; //pass a color parameter to the renderer
 		}
 
 		PxCloth* Get() 
@@ -208,8 +209,8 @@ namespace PhysicsEngine
 		virtual void Create()
 		{
 			PxRigidDynamic* box = GetPhysics()->createRigidDynamic(pose);
-			PxShape* shape1 = box->createShape(PxBoxGeometry(PxVec3(.5f,.5f,.5f)), *material);
-			PxShape* shape2 = box->createShape(PxBoxGeometry(PxVec3(.5f,.5f,.5f)), *material);
+			PxShape* shape1 = box->createShape(PxBoxGeometry(PxVec3(1.5f,1.5f,1.5f)), *material);
+			PxShape* shape2 = box->createShape(PxBoxGeometry(PxVec3(1.5f,1.5f,1.5f)), *material);
 			shape2->setLocalPose(PxTransform(PxVec3(2.f,.0f,.0f)));
 			PxRigidBodyExt::setMassAndUpdateInertia(*box, density);
 			actor = box;
@@ -385,14 +386,14 @@ namespace PhysicsEngine
 			plane = new Plane();
 			Add(plane);
 
-//			cloth = new Cloth(PxTransform(PxVec3(-4.f,9.f,0.f)), PxVec2(8.f,8.f), 40, 40);
-//			Add(*cloth);
+			cloth = new Cloth(PxTransform(PxVec3(-4.f,9.f,0.f)), PxVec2(8.f,8.f), 40, 40);
+			Add(*cloth);
 
-			box = new Box2(PxTransform(PxVec3(.0f,10.f,.0f)),1.f,PxVec3(.9,.0f,.0f));
-//			Add(box);
+			box = new Box2(PxTransform(PxVec3(.0f,5.f,.0f)),1.f,PxVec3(.9,.0f,.0f));
+			Add(box);
 
-			capsule = new Capsule(PxTransform(PxVec3(.0f,10.f,.0f)));
-			Add(capsule);
+//			capsule = new Capsule(PxTransform(PxVec3(.0f,10.f,.0f)));
+//			Add(capsule);
 
 			//setting custom cloth parameters
 			//cloth->Get()->setStretchConfig(PxClothFabricPhaseType::eBENDING, PxClothStretchConfig(1.f));
@@ -402,9 +403,9 @@ namespace PhysicsEngine
 		virtual void CustomUpdate() 
 		{
 			
-			PxTransform t = capsule->PxRigidActor()->getGlobalPose();
-			t.q *= PxQuat(.01f,PxVec3(1.0f,1.f,1.0f));
-			capsule->PxRigidActor()->setGlobalPose(t);
+//			PxTransform t = capsule->PxRigidActor()->getGlobalPose();
+//			t.q *= PxQuat(.01f,PxVec3(1.0f,1.f,1.0f));
+//			capsule->PxRigidActor()->setGlobalPose(t);
 
 			///an example showing how to interface the collision callbacks with the simulation
 			if (my_callback->trigger)

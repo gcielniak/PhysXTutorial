@@ -15,6 +15,7 @@ data/
 *.ncb
 *.suo
 *.vcproj.*
+*.sdf
 
 #codeblocks files
 */*/*.layout
