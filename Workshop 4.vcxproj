@@ -13,6 +13,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{82ED3AB0-5BEA-40BA-A155-A7948C0474A3}</ProjectGuid>
     <RootNamespace>BasicProgram</RootNamespace>
+    <ProjectName>PhysXTutorial</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -100,6 +101,7 @@
     <ClCompile Include="Extras\Renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BasicActors.h" />
     <ClInclude Include="Exception.h" />
     <ClInclude Include="MyPhysicsEngine.h" />
     <ClInclude Include="PhysicsEngine.h" />

@@ -18,6 +18,7 @@
     <ClInclude Include="Extras\GLFontRenderer.h" />
     <ClInclude Include="Extras\HUD.h" />
     <ClInclude Include="Extras\Renderer.h" />
+    <ClInclude Include="BasicActors.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram.cd" />

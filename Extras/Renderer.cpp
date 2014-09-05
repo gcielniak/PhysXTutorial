@@ -18,9 +18,9 @@ namespace VisualDebugger
 		static PxU32 gConvexMeshTriIndices[3*MAX_NUM_CONVEXMESH_TRIANGLES];
 
 		static float gPlaneData[]={
-			-1.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
-			1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, -1.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-			1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f
+			-1.f, 0.f, -1.f, 0.f, 1.f, 0.f, -1.f, 0.f, 1.f, 0.f, 1.f, 0.f,
+			1.f, 0.f, 1.f, 0.f, 1.f, 0.f, -1.f, 0.f, -1.f, 0.f, 1.f, 0.f,
+			1.f, 0.f, 1.f, 0.f, 1.f, 0.f, 1.f, 0.f, -1.f, 0.f, 1.f, 0.f
 		};
 
 		void BuildNormals(const PxVec3* PX_RESTRICT vertices, PxU32 numVerts, const PxU16* PX_RESTRICT faces, PxU32 numFaces, PxVec3* PX_RESTRICT normals)
@@ -58,7 +58,7 @@ namespace VisualDebugger
 			case PxGeometryType::eBOX:			
 				{
 					glScalef(h.box().halfExtents.x, h.box().halfExtents.y, h.box().halfExtents.z);
-					glutSolidCube(2.0f);		
+					glutSolidCube(2.f);		
 				}
 				break;
 			case PxGeometryType::eSPHERE:		
@@ -85,23 +85,23 @@ namespace VisualDebugger
 
 					//Sphere
 					glPushMatrix();
-					glTranslatef(halfHeight,0.0f, 0.0f);
+					glTranslatef(halfHeight,0.f, 0.f);
 					glScalef(radius,radius,radius);
 					glutSolidSphere(1, render_detail, render_detail);		
 					glPopMatrix();
 
 					//Sphere
 					glPushMatrix();
-					glTranslatef(-halfHeight,0.0f,0.0f);
+					glTranslatef(-halfHeight,0.f,0.f);
 					glScalef(radius,radius,radius);
 					glutSolidSphere(1, render_detail, render_detail);		
 					glPopMatrix();
 
 					//Cylinder
 					glPushMatrix();
-					glTranslatef(-halfHeight,0.0f,0.0f);
-					glScalef(2.0f*halfHeight,radius,radius);
-					glRotatef(90.0f,0.0f,1.0f,0.0f);
+					glTranslatef(-halfHeight,0.f,0.f);
+					glScalef(2.f*halfHeight,radius,radius);
+					glRotatef(90.f,0.f,1.f,0.f);
 
 					GLUquadric* qobj = gluNewQuadric();
 					gluQuadricNormals(qobj, GLU_SMOOTH);
@@ -173,6 +173,44 @@ namespace VisualDebugger
 					}
 				}
 				break;
+			case PxGeometryType::eTRIANGLEMESH:
+				{
+					PxTriangleMesh* mesh = h.triangleMesh().triangleMesh;
+					const PxVec3* verts = mesh->getVertices();
+					PxU16* trigs = (PxU16*)mesh->getTriangles();
+					const PxU32 numVerts = mesh->getNbVertices();
+					const PxU32 numTrigs = mesh->getNbTriangles();
+
+					//compute normals
+					PxVec3* norms = new PxVec3[numVerts];
+
+					for (PxU32 i = 0; i < numVerts; i++)
+						norms[i] = PxVec3(0.f,0.f,0.f);
+
+					for (PxU32 i = 0; i < 3*numTrigs; i+=3)
+					{
+						PxVec3 v1 = verts[trigs[i]];
+						PxVec3 v2 = verts[trigs[i+1]];
+						PxVec3 v3 = verts[trigs[i+2]];
+						PxVec3 n = -((v2-v1).cross(v3-v1));
+
+						norms[trigs[i]] += n;
+						norms[trigs[i+1]] += n;
+						norms[trigs[i+2]] += n;
+					}
+
+					for (PxU32 i = 0; i < numVerts; i++)
+						norms[i].normalize();
+
+					glEnableClientState(GL_VERTEX_ARRAY);
+					glEnableClientState(GL_NORMAL_ARRAY);
+					glVertexPointer(3, GL_FLOAT, 0, verts);
+					glNormalPointer(GL_FLOAT, sizeof(PxVec3), norms);
+					glDrawElements(GL_TRIANGLES, numTrigs*3, GL_UNSIGNED_SHORT, trigs);
+					glDisableClientState(GL_NORMAL_ARRAY);
+					glDisableClientState(GL_VERTEX_ARRAY);
+				}
+				break;
 			default:
 				break;
 			}
@@ -217,7 +255,7 @@ namespace VisualDebugger
 			PxReal ambientColor[]	= { .25f, .25f, .25f, 1.f };
 			PxReal diffuseColor[]	= { 1.f, 1.f, 1.f, 1.f };		
 			PxReal specularColor[]	= { 1.f, 1.f, 1.f, 1.f };		
-			PxReal position[]		= { 1.f, 1.f, 1.f, 1.0f };		
+			PxReal position[]		= { 1.f, 1.f, -1.f, 1.f };		
 			glLightfv(GL_LIGHT0, GL_AMBIENT, ambientColor);
 			glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseColor);
 			glLightfv(GL_LIGHT0, GL_SPECULAR, specularColor);
@@ -232,11 +270,11 @@ namespace VisualDebugger
 			// Setup camera
 			glMatrixMode(GL_PROJECTION);
 			glLoadIdentity();
-			gluPerspective(60.0f, (float)glutGet(GLUT_WINDOW_WIDTH)/(float)glutGet(GLUT_WINDOW_HEIGHT), 1.0f, 10000.0f);
+			gluPerspective(60.f, (float)glutGet(GLUT_WINDOW_WIDTH)/(float)glutGet(GLUT_WINDOW_HEIGHT), 1.f, 10000.f);
 
 			glMatrixMode(GL_MODELVIEW);
 			glLoadIdentity();
-			gluLookAt(cameraEye.x, cameraEye.y, cameraEye.z, cameraEye.x + cameraDir.x, cameraEye.y + cameraDir.y, cameraEye.z + cameraDir.z, 0.0f, 1.0f, 0.0f);
+			gluLookAt(cameraEye.x, cameraEye.y, cameraEye.z, cameraEye.x + cameraDir.x, cameraEye.y + cameraDir.y, cameraEye.z + cameraDir.z, 0.f, 1.f, 0.f);
 		}
 
 		void Render(PxRigidActor** actors, const PxU32 numActors)
@@ -257,7 +295,7 @@ namespace VisualDebugger
 					//move the plane slightly down to avoid visual artefacts
 					if (h.getType() == PxGeometryType::ePLANE)
 					{
-						pose.q *= PxQuat(PxHalfPi, PxVec3(0.0f, 0.0f, 1.0f));
+						pose.q *= PxQuat(PxHalfPi, PxVec3(0.f, 0.f, 1.f));
 						pose.p += PxVec3(0,-0.01,0);
 					}
 
@@ -281,7 +319,7 @@ namespace VisualDebugger
 					if (h.getType() == PxGeometryType::ePLANE)
 						glDisable(GL_LIGHTING);
 
-					glColor4f(actor_color.x, actor_color.y, actor_color.z, 1.0f);
+					glColor4f(actor_color.x, actor_color.y, actor_color.z, 1.f);
 
 					RenderGeometry(h);
 
@@ -298,7 +336,7 @@ namespace VisualDebugger
 						glMultMatrixf(shadowMat);
 						glMultMatrixf((float*)&shapePose);
 						glDisable(GL_LIGHTING);
-						glColor4f(shadow_color.x, shadow_color.y, shadow_color.z, 1.0f);
+						glColor4f(shadow_color.x, shadow_color.y, shadow_color.z, 1.f);
 						RenderGeometry(h);
 						glEnable(GL_LIGHTING);
 						glPopMatrix();
@@ -362,7 +400,7 @@ namespace VisualDebugger
 
 					glPushMatrix();						
 					glMultMatrixf((float*)&shapePose);
-					glColor4f(0.9f, 0.f, 0.9f, 1.0f);
+					glColor4f(0.9f, 0.f, 0.9f, 1.f);
 
 					glEnableClientState(GL_VERTEX_ARRAY);
 					glEnableClientState(GL_NORMAL_ARRAY);
@@ -414,7 +452,7 @@ namespace VisualDebugger
 		///TODO: support text data
 		void Render(const PxRenderBuffer& data)
 		{
-			glLineWidth(1.0f);
+			glLineWidth(1.f);
 
 			//render points
 
@@ -431,10 +469,10 @@ namespace VisualDebugger
 					pVertList[vertIndex++] = Points->pos.x;
 					pVertList[vertIndex++] = Points->pos.y;
 					pVertList[vertIndex++] = Points->pos.z;
-					pColorList[colorIndex++] = (float)((Points->color>>16)&0xff)/255.0f;
-					pColorList[colorIndex++] = (float)((Points->color>>8)&0xff)/255.0f;
-					pColorList[colorIndex++] = (float)(Points->color&0xff)/255.0f;
-					pColorList[colorIndex++] = 1.0f;
+					pColorList[colorIndex++] = (float)((Points->color>>16)&0xff)/255.f;
+					pColorList[colorIndex++] = (float)((Points->color>>8)&0xff)/255.f;
+					pColorList[colorIndex++] = (float)(Points->color&0xff)/255.f;
+					pColorList[colorIndex++] = 1.f;
 					Points++;
 				}
 
@@ -459,18 +497,18 @@ namespace VisualDebugger
 					pVertList[vertIndex++] = Lines->pos0.x;
 					pVertList[vertIndex++] = Lines->pos0.y;
 					pVertList[vertIndex++] = Lines->pos0.z;
-					pColorList[colorIndex++] = (float)((Lines->color0>>16)&0xff)/255.0f;
-					pColorList[colorIndex++] = (float)((Lines->color0>>8)&0xff)/255.0f;
-					pColorList[colorIndex++] = (float)(Lines->color0&0xff)/255.0f;
-					pColorList[colorIndex++] = 1.0f;
+					pColorList[colorIndex++] = (float)((Lines->color0>>16)&0xff)/255.f;
+					pColorList[colorIndex++] = (float)((Lines->color0>>8)&0xff)/255.f;
+					pColorList[colorIndex++] = (float)(Lines->color0&0xff)/255.f;
+					pColorList[colorIndex++] = 1.f;
 
 					pVertList[vertIndex++] = Lines->pos1.x;
 					pVertList[vertIndex++] = Lines->pos1.y;
 					pVertList[vertIndex++] = Lines->pos1.z;
-					pColorList[colorIndex++] = (float)((Lines->color1>>16)&0xff)/255.0f;
-					pColorList[colorIndex++] = (float)((Lines->color1>>8)&0xff)/255.0f;
-					pColorList[colorIndex++] = (float)(Lines->color1&0xff)/255.0f;
-					pColorList[colorIndex++] = 1.0f;
+					pColorList[colorIndex++] = (float)((Lines->color1>>16)&0xff)/255.f;
+					pColorList[colorIndex++] = (float)((Lines->color1>>8)&0xff)/255.f;
+					pColorList[colorIndex++] = (float)(Lines->color1&0xff)/255.f;
+					pColorList[colorIndex++] = 1.f;
 
 					Lines++;
 				}
@@ -505,20 +543,20 @@ namespace VisualDebugger
 					pVertList[vertIndex++] = Triangles->pos2.y;
 					pVertList[vertIndex++] = Triangles->pos2.z;
 
-					pColorList[colorIndex++] = (float)((Triangles->color0>>16)&0xff)/255.0f;
-					pColorList[colorIndex++] = (float)((Triangles->color0>>8)&0xff)/255.0f;
-					pColorList[colorIndex++] = (float)(Triangles->color0&0xff)/255.0f;
-					pColorList[colorIndex++] = 1.0f;
+					pColorList[colorIndex++] = (float)((Triangles->color0>>16)&0xff)/255.f;
+					pColorList[colorIndex++] = (float)((Triangles->color0>>8)&0xff)/255.f;
+					pColorList[colorIndex++] = (float)(Triangles->color0&0xff)/255.f;
+					pColorList[colorIndex++] = 1.f;
 
-					pColorList[colorIndex++] = (float)((Triangles->color1>>16)&0xff)/255.0f;
-					pColorList[colorIndex++] = (float)((Triangles->color1>>8)&0xff)/255.0f;
-					pColorList[colorIndex++] = (float)(Triangles->color1&0xff)/255.0f;
-					pColorList[colorIndex++] = 1.0f;
+					pColorList[colorIndex++] = (float)((Triangles->color1>>16)&0xff)/255.f;
+					pColorList[colorIndex++] = (float)((Triangles->color1>>8)&0xff)/255.f;
+					pColorList[colorIndex++] = (float)(Triangles->color1&0xff)/255.f;
+					pColorList[colorIndex++] = 1.f;
 
-					pColorList[colorIndex++] = (float)((Triangles->color2>>16)&0xff)/255.0f;
-					pColorList[colorIndex++] = (float)((Triangles->color2>>8)&0xff)/255.0f;
-					pColorList[colorIndex++] = (float)(Triangles->color2&0xff)/255.0f;
-					pColorList[colorIndex++] = 1.0f;
+					pColorList[colorIndex++] = (float)((Triangles->color2>>16)&0xff)/255.f;
+					pColorList[colorIndex++] = (float)((Triangles->color2>>8)&0xff)/255.f;
+					pColorList[colorIndex++] = (float)(Triangles->color2&0xff)/255.f;
+					pColorList[colorIndex++] = 1.f;
 
 					Triangles++;
 				}

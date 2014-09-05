@@ -1,199 +1,12 @@
 #pragma once
 
-#include "PhysicsEngine.h"
+#include "BasicActors.h"
 #include <iostream>
 #include <iomanip>
 
 namespace PhysicsEngine
 {
 	using namespace std;
-
-	class Cloth : public Actor
-	{
-		PxVec2 size;
-		PxU32 width, height;
-		bool fix_top;
-
-	public:
-		PxClothMeshDesc meshDesc;
-
-		//constructor
-		Cloth(PxTransform pose=PxTransform(PxIdentity), const PxVec2& _size=PxVec2(1.f,1.f), PxU32 _width=1, PxU32 _height=1, bool _fix_top = true, const PxVec3& _color=PxVec3(.9f,0.f,0.f))
-			: Actor(pose, _color), size(_size), width(_width), height(_height), fix_top(_fix_top)
-		{
-		}
-
-		virtual void Create()
-		{
-			//prepare vertices
-			PxReal w_step = size.x/width;
-			PxReal h_step = size.y/height;
-
-			PxClothParticle* vertices = new PxClothParticle[(width+1)*(height+1)*4];
-			PxU32* primitives = new PxU32[width*height*4];
-
-			for (PxU32 j = 0; j < (height+1); j++)
-			for (PxU32 i = 0; i < (width+1); i++)
-			{
-				PxU32 offset = i + j*(width+1);
-				vertices[offset].pos = PxVec3(w_step*i,0.f,h_step*j);
-				if (fix_top && (j == 0)) //fix the top row of vertices
-					vertices[offset].invWeight = 0.f;
-				else
-					vertices[offset].invWeight = 1.f;
-			}
-
-			for (PxU32 j = 0; j < height; j++)
-			for (PxU32 i = 0; i < width; i++)
-			{
-				PxU32 offset = (i + j*width)*4;
-				primitives[offset + 0] = (i+0) + (j+0)*(width+1);
-				primitives[offset + 1] = (i+1) + (j+0)*(width+1);
-				primitives[offset + 2] = (i+1) + (j+1)*(width+1);
-				primitives[offset + 3] = (i+0) + (j+1)*(width+1);
-			}
-
-			//init cloth mesh description
-			meshDesc.points.data = vertices;
-			meshDesc.points.count = (width+1)*(height+1);
-			meshDesc.points.stride = sizeof(PxClothParticle);
-
-			meshDesc.invMasses.data = &vertices->invWeight;
-			meshDesc.invMasses.count = (width+1)*(height+1);
-			meshDesc.invMasses.stride = sizeof(PxClothParticle);
-
-			meshDesc.quads.data = primitives;
-			meshDesc.quads.count = width*height;
-			meshDesc.quads.stride = sizeof(PxU32) * 4;
-
-			//create cloth fabric (cooking)
-			PxClothFabric* fabric = PxClothFabricCreate(*GetPhysics(), meshDesc, PxVec3(0, -1, 0));
-
-			//create cloth
-			PxCloth* cloth = GetPhysics()->createCloth(pose, *fabric, vertices, PxClothFlags());
-			//collisions with the scene objects
-			cloth->setClothFlag(PxClothFlag::eSCENE_COLLISION, true);
-
-			actor = cloth;
-			actor->userData = &meshDesc; //pass a color parameter to the renderer
-		}
-
-		PxCloth* Get() 
-		{
-			return (PxCloth*)actor; 
-		}
-	};
-
-	static const PxVec3 pyramid_verts[] = {PxVec3(0,1,0), PxVec3(1,0,0), PxVec3(-1,0,0), PxVec3(0,0,1), PxVec3(0,0,-1)};
-
-	///The Pyramid class demonstrating convex meshes
-	class Pyramid : public Actor
-	{
-		PxReal density;
-
-	public:
-		//constructor
-		Pyramid(PxTransform pose=PxTransform(PxIdentity), PxReal _density=1.f,
-			const PxVec3& _color=PxVec3(.9f,0.f,0.f))
-			: Actor(pose, _color), density(_density)
-		{
-		}
-
-		//mesh cooking (preparation)
-		PxConvexMesh* CookMesh()
-		{
-			PxConvexMeshDesc convexDesc;
-			convexDesc.points.count     = sizeof(pyramid_verts)/sizeof(PxVec3);
-			convexDesc.points.stride    = sizeof(PxVec3);
-			convexDesc.points.data      = pyramid_verts;
-			convexDesc.flags            = PxConvexFlag::eCOMPUTE_CONVEX;
-			convexDesc.vertexLimit      = 256;
-
-			PxDefaultMemoryOutputStream stream;
-
-			if(!GetCooking()->cookConvexMesh(convexDesc, stream))
-				throw new Exception("Pyramid::CookMesh, cooking failed.");
-
-			PxDefaultMemoryInputData input(stream.getData(), stream.getSize());
-
-			return GetPhysics()->createConvexMesh(input);
-		}
-
-		virtual void Create()
-		{
-			PxRigidDynamic* pyramid = GetPhysics()->createRigidDynamic(pose);
-			pyramid->createShape(PxConvexMeshGeometry(CookMesh()), *GetDefaultMaterial());
-			PxRigidBodyExt::setMassAndUpdateInertia(*pyramid, density);
-			actor = pyramid;
-			actor->userData = &color; //pass color parameter to renderer
-		}
-
-		PxRigidDynamic* Get() 
-		{
-			return (PxRigidDynamic*)actor; 
-		}
-	};
-
-	class Capsule : public Actor
-	{
-		PxVec2 dimensions;
-		PxReal density;
-		PxShape* shape;
-	public:
-		Capsule(PxTransform pose=PxTransform(PxIdentity), PxVec2 _dimensions=PxVec2(1.f,1.f), PxReal _density=1.f,
-			const PxVec3& _color=PxVec3(.9f,0.f,0.f)) 
-			: Actor(pose, _color), dimensions(_dimensions), density(_density)
-		{
-		}
-
-		virtual void Create()
-		{
-			PxRigidDynamic* capsule = GetPhysics()->createRigidDynamic(pose);
-			shape = capsule->createShape(PxCapsuleGeometry(dimensions.x, dimensions.y), *GetDefaultMaterial());
-			PxRigidBodyExt::setMassAndUpdateInertia(*capsule, density);
-			actor = capsule;
-			actor->userData = &color; //pass color parameter to renderer
-		}
-	};
-
-	///Box class
-	class Box : public Actor
-	{
-		PxVec3 dimensions;
-		PxReal density;
-		PxShape* shape;
-
-	public:
-		//a Box with default parameters:
-		// - pose in 0,0,0
-		// - dimensions: 1m x 1m x 1m
-		// - denisty: 1kg/m^3
-		Box(PxTransform pose=PxTransform(PxIdentity), PxVec3 _dimensions=PxVec3(.5f,.5f,.5f), PxReal _density=1.f,
-			const PxVec3& _color=PxVec3(.9f,0.f,0.f)) 
-			: Actor(pose, _color), dimensions(_dimensions), density(_density)
-		{ 
-		}
-
-		virtual void Create()
-		{
-			PxRigidDynamic* box = GetPhysics()->createRigidDynamic(pose);
-			shape = box->createShape(PxBoxGeometry(dimensions), *GetDefaultMaterial());
-			PxRigidBodyExt::setMassAndUpdateInertia(*box, density);
-			actor = box;
-			actor->userData = &color; //pass color parameter to renderer
-		}
-
-		PxRigidDynamic* Get() 
-		{
-			return (PxRigidDynamic*)actor; 
-		}
-
-		//get a single shape
-		PxShape* GetShape()
-		{
-			return shape;
-		}
-	};
 
 	class Box2 : public Actor
 	{
@@ -220,28 +33,6 @@ namespace PhysicsEngine
 		PxRigidDynamic* Get() 
 		{
 			return (PxRigidDynamic*)actor; 
-		}
-	};
-
-	///Plane class
-	class Plane : public Actor
-	{
-		PxVec3 normal;
-		PxReal distance;
-
-	public:
-		//A plane with default paramters: XZ plane centred at (0,0,0)
-		Plane(PxVec3 _normal=PxVec3(0.f, 1.f, 0.f), PxReal _distance=0.f,
-			const PxVec3& color=PxVec3(.5f,.5f,.5f)) 
-			: Actor(PxTransform(PxIdentity), color), normal(_normal), distance(_distance)
-		{
-		}
-
-		virtual void Create()
-		{
-			PxRigidStatic* plane = PxCreatePlane(*GetPhysics(), PxPlane(normal, distance), *GetDefaultMaterial());
-			actor = plane;
-			actor->userData = &color; //pass color parameter to renderer
 		}
 	};
 
@@ -347,6 +138,9 @@ namespace PhysicsEngine
 		virtual void onSleep(PxActor **actors, PxU32 count) {}
 	};
 
+	static const PxVec3 pyramid_verts[] = {PxVec3(0,1,0), PxVec3(1,0,0), PxVec3(-1,0,0), PxVec3(0,0,1), PxVec3(0,0,-1)};
+	static const PxU32 pyramid_trigs[] = {0, 1, 4, 0, 1, 3, 0, 3, 2, 0, 2, 4, 1, 2, 3, 1, 2, 4};
+
 	///Custom scene class
 	class MyScene : public Scene
 	{
@@ -354,7 +148,8 @@ namespace PhysicsEngine
 		Box2* box;
 		Capsule* capsule;
 		Cloth* cloth;
-		Pyramid* pyramid;
+		ConvexMesh* pyramid;
+		TriangleMesh* pyramid_2;
 		MySimulationEventCallback* my_callback;
 
 	public:
@@ -393,8 +188,11 @@ namespace PhysicsEngine
 			box = new Box2(PxTransform(PxVec3(.0f,5.f,.0f)),1.f,PxVec3(.9,.0f,.0f));
 			Add(box);
 
-			pyramid = new Pyramid(PxTransform(PxVec3(-5.0f,5.f,.0f)));
+			pyramid = new ConvexMesh(pyramid_verts, sizeof(pyramid_verts), PxTransform(PxVec3(-5.0f,5.f,.0f)));
 			Add(pyramid);
+
+			pyramid_2 = new TriangleMesh(pyramid_verts, sizeof(pyramid_verts), pyramid_trigs, sizeof(pyramid_trigs), PxTransform(PxVec3(-3.0f,1.f,3.0f)));
+			Add(pyramid_2);
 
 //			capsule = new Capsule(PxTransform(PxVec3(.0f,10.f,.0f)));
 //			Add(capsule);
