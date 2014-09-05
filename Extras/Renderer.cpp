@@ -117,6 +117,7 @@ namespace VisualDebugger
 					const PxU32 nbPolys = mesh->getNbPolygons();
 					const PxU8* polygons = mesh->getIndexBuffer();
 					const PxVec3* verts = mesh->getVertices();
+					PxU32 numVerts = mesh->getNbVertices();
 					PxU32 numTotalTriangles = 0;
 					for(PxU32 i = 0; i < nbPolys; i++)
 					{
@@ -139,15 +140,37 @@ namespace VisualDebugger
 						}
 					}
 
+					//compute normals
+					PxVec3* norms = new PxVec3[numVerts];
+
+					for (PxU32 i = 0; i < numVerts; i++)
+						norms[i] = PxVec3(0.f,0.f,0.f);
+
+					for (PxU32 i = 0; i < 3*numTotalTriangles; i+=3)
+					{
+						PxVec3 v1 = verts[gConvexMeshTriIndices[i]];
+						PxVec3 v2 = verts[gConvexMeshTriIndices[i+1]];
+						PxVec3 v3 = verts[gConvexMeshTriIndices[i+2]];
+						PxVec3 n = (v2-v1).cross(v3-v1);
+
+						norms[gConvexMeshTriIndices[i]] += n;
+						norms[gConvexMeshTriIndices[i+1]] += n;
+						norms[gConvexMeshTriIndices[i+2]] += n;
+					}
+
+					for (PxU32 i = 0; i < numVerts; i++)
+						norms[i].normalize();
+
 					if(numTotalTriangles < MAX_NUM_CONVEXMESH_TRIANGLES)
 					{
 						glEnableClientState(GL_VERTEX_ARRAY);
+						glEnableClientState(GL_NORMAL_ARRAY);
 						glVertexPointer(3, GL_FLOAT, 0, verts);
+						glNormalPointer(GL_FLOAT, sizeof(PxVec3), norms);
 						glDrawElements(GL_TRIANGLES, numTotalTriangles*3, GL_UNSIGNED_INT, gConvexMeshTriIndices);
+						glDisableClientState(GL_NORMAL_ARRAY);
 						glDisableClientState(GL_VERTEX_ARRAY);
 					}
-
-					//add normals
 				}
 				break;
 			default:
@@ -194,7 +217,7 @@ namespace VisualDebugger
 			PxReal ambientColor[]	= { .25f, .25f, .25f, 1.f };
 			PxReal diffuseColor[]	= { 1.f, 1.f, 1.f, 1.f };		
 			PxReal specularColor[]	= { 1.f, 1.f, 1.f, 1.f };		
-			PxReal position[]		= { -100.f, 100.f, 200.f, 1.0f };		
+			PxReal position[]		= { 1.f, 1.f, 1.f, 1.0f };		
 			glLightfv(GL_LIGHT0, GL_AMBIENT, ambientColor);
 			glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseColor);
 			glLightfv(GL_LIGHT0, GL_SPECULAR, specularColor);
@@ -269,7 +292,7 @@ namespace VisualDebugger
 
 					if(show_shadows && (h.getType() != PxGeometryType::ePLANE))
 					{
-						const PxVec3 shadowDir(0.0f, -0.7071067f, -0.7071067f);
+						const PxVec3 shadowDir(-0.7071067f, -0.7071067f, -0.7071067f);
 						const PxReal shadowMat[]={ 1,0,0,0, -shadowDir.x/shadowDir.y,0,-shadowDir.z/shadowDir.y,0, 0,0,1,0, 0,0,0,1 };
 						glPushMatrix();						
 						glMultMatrixf(shadowMat);
@@ -313,13 +336,15 @@ namespace VisualDebugger
 					readData->unlock();
 
 					//Compute normals
+					for (PxU32 i = 0; i < numVerts; i++)
+						norms[i] = PxVec3(0.f,0.f,0.f);
 
 					for (PxU32 i = 0; i < quad_count*4; i+=4)
 					{
 						PxVec3 v1 = verts[quads[i]];
 						PxVec3 v2 = verts[quads[i+1]];
 						PxVec3 v3 = verts[quads[i+2]];
-						PxVec3 n = (v2-v1).cross(v3-v1)/4;
+						PxVec3 n = -((v2-v1).cross(v3-v1));
 
 						norms[quads[i]] += n;
 						norms[quads[i+1]] += n;
@@ -332,7 +357,6 @@ namespace VisualDebugger
 
 					PxTransform pose = cloth->getGlobalPose();
 					PxMat44 shapePose(pose);
-
 
 					glEnable(GL_LIGHTING);
 

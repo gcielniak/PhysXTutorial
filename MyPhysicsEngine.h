@@ -354,6 +354,7 @@ namespace PhysicsEngine
 		Box2* box;
 		Capsule* capsule;
 		Cloth* cloth;
+		Pyramid* pyramid;
 		MySimulationEventCallback* my_callback;
 
 	public:
@@ -392,6 +393,9 @@ namespace PhysicsEngine
 			box = new Box2(PxTransform(PxVec3(.0f,5.f,.0f)),1.f,PxVec3(.9,.0f,.0f));
 			Add(box);
 
+			pyramid = new Pyramid(PxTransform(PxVec3(-5.0f,5.f,.0f)));
+			Add(pyramid);
+
 //			capsule = new Capsule(PxTransform(PxVec3(.0f,10.f,.0f)));
 //			Add(capsule);
 
@@ -402,11 +406,6 @@ namespace PhysicsEngine
 		//Custom udpate function
 		virtual void CustomUpdate() 
 		{
-			
-//			PxTransform t = capsule->PxRigidActor()->getGlobalPose();
-//			t.q *= PxQuat(.01f,PxVec3(1.0f,1.f,1.0f));
-//			capsule->PxRigidActor()->setGlobalPose(t);
-
 			///an example showing how to interface the collision callbacks with the simulation
 			if (my_callback->trigger)
 			{
@@ -418,14 +417,15 @@ namespace PhysicsEngine
 		void ExampleKeyReleaseHandler()
 		{
 			cerr << "I am realeased!" << endl;
-			capsule->Color(PxVec3(.9f,.0f,.0f));
+			PxTransform t = box->PxRigidActor()->getGlobalPose();
+			t.q *= PxQuat(.01f,PxVec3(1.0f,1.f,1.0f));
+			box->PxRigidActor()->setGlobalPose(t);
 		}
 
 		/// An example use of key presse handling
 		void ExampleKeyPressHandler()
 		{
 			cerr << "I am pressed!" << endl;
-			capsule->Color(PxVec3(.9f,.9f,.0f));
 		}
 	};
 }
