@@ -1,6 +1,6 @@
 #include "Renderer.h"
 #include <iostream>
-
+#include <vector>
 using namespace std;
 
 namespace VisualDebugger
@@ -10,12 +10,12 @@ namespace VisualDebugger
 
 		const int MAX_NUM_CONVEXMESH_TRIANGLES = 1024;
 		const int MAX_NUM_ACTOR_SHAPES = 128;
-		PxVec3 default_color = PxVec3(0.5f, 0.5f, 0.5f);
+		PxVec3 default_color = PxVec3(0.7f, 0.7f, 0.7f);
 
 		int render_detail = 10;
 		bool show_shadows = true;
 
-		static PxU32 gConvexMeshTriIndices[3*MAX_NUM_CONVEXMESH_TRIANGLES];
+		static PxU32 trigs[3*MAX_NUM_CONVEXMESH_TRIANGLES];
 
 		static float gPlaneData[]={
 			-1.f, 0.f, -1.f, 0.f, 1.f, 0.f, -1.f, 0.f, 1.f, 0.f, 1.f, 0.f,
@@ -23,197 +23,224 @@ namespace VisualDebugger
 			1.f, 0.f, 1.f, 0.f, 1.f, 0.f, 1.f, 0.f, -1.f, 0.f, 1.f, 0.f
 		};
 
-		void BuildNormals(const PxVec3* PX_RESTRICT vertices, PxU32 numVerts, const PxU16* PX_RESTRICT faces, PxU32 numFaces, PxVec3* PX_RESTRICT normals)
+		void DrawPlane()
 		{
-			memset(normals, 0, sizeof(PxVec3)*numVerts);
-
-			const PxU32 numIndices = numFaces*3;
-
-			// accumulate area weighted face normals in each vertex
-			for (PxU32 t=0; t < numIndices; t+=3)
-			{
-				PxU16 i = faces[t];
-				PxU16 j = faces[t+1];
-				PxU16 k = faces[t+2];
-
-				PxVec3 e1 = vertices[j]-vertices[i];
-				PxVec3 e2 = vertices[k]-vertices[i];
-
-				PxVec3 n = e2.cross(e1);
-
-				normals[i] += n;
-				normals[j] += n;
-				normals[k] += n;
-			}
-
-			// average
-			for (PxU32 i=0; i < numVerts; ++i)
-				normals[i].normalize();
+			glScalef(10240,0,10240);
+			glEnableClientState(GL_VERTEX_ARRAY);
+			glEnableClientState(GL_NORMAL_ARRAY);
+			glVertexPointer(3, GL_FLOAT, 2*3*sizeof(float), gPlaneData);
+			glNormalPointer(GL_FLOAT, 2*3*sizeof(float), gPlaneData+3);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+			glDisableClientState(GL_VERTEX_ARRAY);
+			glDisableClientState(GL_NORMAL_ARRAY);
 		}
 
-		void RenderGeometry(const PxGeometryHolder& h)
+		void DrawSphere(const PxGeometryHolder& geometry)
 		{
-			switch(h.getType())
+			glutSolidSphere(geometry.sphere().radius, render_detail, render_detail);
+		}
+
+		void DrawBox(const PxGeometryHolder& geometry)
+		{
+			PxVec3 half_size = geometry.box().halfExtents;
+			glScalef(half_size.x, half_size.y, half_size.z);
+			glutSolidCube(2.f);		
+		}
+
+		void DrawCapsule(const PxGeometryHolder& geometry)
+		{
+			const PxF32 radius = geometry.capsule().radius;
+			const PxF32 halfHeight = geometry.capsule().halfHeight;
+
+			//Sphere
+			glPushMatrix();
+			glTranslatef(halfHeight,0.f, 0.f);
+			glutSolidSphere(radius, render_detail, render_detail);		
+			glPopMatrix();
+
+			//Sphere
+			glPushMatrix();
+			glTranslatef(-halfHeight,0.f,0.f);
+			glutSolidSphere(radius, render_detail, render_detail);		
+			glPopMatrix();
+
+			//Cylinder
+			glPushMatrix();
+			glTranslatef(-halfHeight,0.f,0.f);
+			glScalef(2.f*halfHeight,radius,radius);
+			glRotatef(90.f,0.f,1.f,0.f);
+
+			GLUquadric* qobj = gluNewQuadric();
+			gluQuadricNormals(qobj, GLU_SMOOTH);
+			gluCylinder(qobj, radius, radius, halfHeight, render_detail, render_detail);
+			glPopMatrix();
+			gluDeleteQuadric(qobj);
+		}
+
+		void DrawConvexMesh(const PxGeometryHolder& geometry)
+		{
+			PxConvexMesh* mesh = geometry.convexMesh().convexMesh;
+			PxU32 num_polys = mesh->getNbPolygons();
+			const PxVec3* verts = mesh->getVertices();
+			const PxU8* indicies = mesh->getIndexBuffer();
+
+			for (PxU32 i = 0; i < num_polys; i++)
 			{
-			case PxGeometryType::eBOX:			
+				PxHullPolygon face;
+				if (mesh->getPolygonData(i,face))
 				{
-					glScalef(h.box().halfExtents.x, h.box().halfExtents.y, h.box().halfExtents.z);
-					glutSolidCube(2.f);		
+					glBegin(GL_POLYGON);
+					glNormal3f(face.mPlane[0],face.mPlane[1],face.mPlane[2]);
+					const PxU8* faceIdx = indicies + face.mIndexBase;
+					for (PxU32 j = 0; j < face.mNbVerts; j++)
+					{
+						PxVec3 v = verts[faceIdx[j]];
+						glVertex3f(v.x,v.y,v.z);
+					}
+					glEnd();
 				}
-				break;
-			case PxGeometryType::eSPHERE:		
+			}
+		}
+
+		void DrawTriangleMesh(const PxGeometryHolder& geometry)
+		{
+			PxTriangleMesh* mesh = geometry.triangleMesh().triangleMesh;
+			const PxVec3* verts = mesh->getVertices();
+			PxU16* trigs = (PxU16*)mesh->getTriangles();
+			const PxU32 num_trigs = mesh->getNbTriangles();
+
+			for (PxU32 i = 0; i < num_trigs*3; i+=3)
+			{
+				PxVec3 v0 = verts[trigs[i]];
+				PxVec3 v1 = verts[trigs[i+1]];
+				PxVec3 v2 = verts[trigs[i+2]];
+				PxVec3 n = (v1-v0).cross(v2-v0);
+				n.normalize();
+				glBegin(GL_POLYGON);
+				glNormal3f(n.x, n.y, n.z);
+				glVertex3f(v0.x, v0.y, v0.z);
+				glVertex3f(v1.x, v1.y, v1.z);
+				glVertex3f(v2.x, v2.y, v2.z);
+				glEnd();
+			}
+		}
+
+		void DrawHeightField(const PxGeometryHolder& geometry)
+		{
+			//TODO
+			PxHeightFieldGeometry hf_geometry = geometry.heightField();
+			const PxReal    rs = hf_geometry.rowScale;
+			const PxReal    hs = hf_geometry.heightScale;
+			const PxReal    cs = hf_geometry.columnScale;
+			PxHeightField* hf = hf_geometry.heightField;
+
+			const PxU32     nbCols = hf->getNbColumns();
+			const PxU32     nbRows = hf->getNbRows();
+
+			const PxU32 nbVerts = nbRows * nbCols;
+			PxHeightFieldSample* sampleBuffer = new PxHeightFieldSample[nbVerts];
+			hf->saveCells(sampleBuffer, nbVerts * sizeof(PxHeightFieldSample));
+
+			PxVec3* vertices = new PxVec3[nbVerts];
+			for(PxU32 i = 0; i < nbRows; i++)
+			{
+				for(PxU32 j = 0; j < nbCols; j++)
 				{
-					glutSolidSphere(h.sphere().radius, render_detail, render_detail);		
+					vertices[i * nbCols + j] = PxVec3(PxReal(i) * rs, PxReal(sampleBuffer[j + (i*nbCols)].height) * hs, PxReal(j) * cs);
 				}
-				break;
+			}
+		}
+
+		void RenderGeometry(const PxGeometryHolder& geometry)
+		{
+			switch(geometry.getType())
+			{
 			case PxGeometryType::ePLANE:
-				{
-					glScalef(10240,0,10240);
-					glEnableClientState(GL_VERTEX_ARRAY);
-					glEnableClientState(GL_NORMAL_ARRAY);
-					glVertexPointer(3, GL_FLOAT, 2*3*sizeof(float), gPlaneData);
-					glNormalPointer(GL_FLOAT, 2*3*sizeof(float), gPlaneData+3);
-					glDrawArrays(GL_TRIANGLES, 0, 6);
-					glDisableClientState(GL_VERTEX_ARRAY);
-					glDisableClientState(GL_NORMAL_ARRAY);
-				}
+				DrawPlane();
+				break;
+			case PxGeometryType::eSPHERE:
+				DrawSphere(geometry);
+				break;
+			case PxGeometryType::eBOX:			
+				DrawBox(geometry);
 				break;
 			case PxGeometryType::eCAPSULE:
-				{
-					const PxF32 radius = h.capsule().radius;
-					const PxF32 halfHeight = h.capsule().halfHeight;
-
-					//Sphere
-					glPushMatrix();
-					glTranslatef(halfHeight,0.f, 0.f);
-					glScalef(radius,radius,radius);
-					glutSolidSphere(1, render_detail, render_detail);		
-					glPopMatrix();
-
-					//Sphere
-					glPushMatrix();
-					glTranslatef(-halfHeight,0.f,0.f);
-					glScalef(radius,radius,radius);
-					glutSolidSphere(1, render_detail, render_detail);		
-					glPopMatrix();
-
-					//Cylinder
-					glPushMatrix();
-					glTranslatef(-halfHeight,0.f,0.f);
-					glScalef(2.f*halfHeight,radius,radius);
-					glRotatef(90.f,0.f,1.f,0.f);
-
-					GLUquadric* qobj = gluNewQuadric();
-					gluQuadricNormals(qobj, GLU_SMOOTH);
-					gluCylinder(qobj, radius, radius, halfHeight, render_detail, render_detail);
-					glPopMatrix();
-					gluDeleteQuadric(qobj);
-				}
+				DrawCapsule(geometry);
 				break;
 			case PxGeometryType::eCONVEXMESH:
-				{
-					//Compute triangles for each polygon.
-					PxConvexMesh* mesh = h.convexMesh().convexMesh;
-					const PxU32 nbPolys = mesh->getNbPolygons();
-					const PxU8* polygons = mesh->getIndexBuffer();
-					const PxVec3* verts = mesh->getVertices();
-					PxU32 numVerts = mesh->getNbVertices();
-					PxU32 numTotalTriangles = 0;
-					for(PxU32 i = 0; i < nbPolys; i++)
-					{
-						PxHullPolygon data;
-						mesh->getPolygonData(i, data);
-
-						const PxU32 nbTris = data.mNbVerts - 2;
-						const PxU8 vref0 = polygons[data.mIndexBase + 0];
-						for(PxU32 j=0;j<nbTris;j++)
-						{
-							const PxU32 vref1 = polygons[data.mIndexBase + 0 + j + 1];
-							const PxU32 vref2 = polygons[data.mIndexBase + 0 + j + 2];
-							if(numTotalTriangles < MAX_NUM_CONVEXMESH_TRIANGLES)
-							{
-								gConvexMeshTriIndices[3*numTotalTriangles + 0] = vref0;
-								gConvexMeshTriIndices[3*numTotalTriangles + 1] = vref1;
-								gConvexMeshTriIndices[3*numTotalTriangles + 2] = vref2;
-								numTotalTriangles++;
-							}
-						}
-					}
-
-					//compute normals
-					PxVec3* norms = new PxVec3[numVerts];
-
-					for (PxU32 i = 0; i < numVerts; i++)
-						norms[i] = PxVec3(0.f,0.f,0.f);
-
-					for (PxU32 i = 0; i < 3*numTotalTriangles; i+=3)
-					{
-						PxVec3 v1 = verts[gConvexMeshTriIndices[i]];
-						PxVec3 v2 = verts[gConvexMeshTriIndices[i+1]];
-						PxVec3 v3 = verts[gConvexMeshTriIndices[i+2]];
-						PxVec3 n = (v2-v1).cross(v3-v1);
-
-						norms[gConvexMeshTriIndices[i]] += n;
-						norms[gConvexMeshTriIndices[i+1]] += n;
-						norms[gConvexMeshTriIndices[i+2]] += n;
-					}
-
-					for (PxU32 i = 0; i < numVerts; i++)
-						norms[i].normalize();
-
-					if(numTotalTriangles < MAX_NUM_CONVEXMESH_TRIANGLES)
-					{
-						glEnableClientState(GL_VERTEX_ARRAY);
-						glEnableClientState(GL_NORMAL_ARRAY);
-						glVertexPointer(3, GL_FLOAT, 0, verts);
-						glNormalPointer(GL_FLOAT, sizeof(PxVec3), norms);
-						glDrawElements(GL_TRIANGLES, numTotalTriangles*3, GL_UNSIGNED_INT, gConvexMeshTriIndices);
-						glDisableClientState(GL_NORMAL_ARRAY);
-						glDisableClientState(GL_VERTEX_ARRAY);
-					}
-				}
+				DrawConvexMesh(geometry);
 				break;
 			case PxGeometryType::eTRIANGLEMESH:
-				{
-					PxTriangleMesh* mesh = h.triangleMesh().triangleMesh;
-					const PxVec3* verts = mesh->getVertices();
-					PxU16* trigs = (PxU16*)mesh->getTriangles();
-					const PxU32 numVerts = mesh->getNbVertices();
-					const PxU32 numTrigs = mesh->getNbTriangles();
-
-					//compute normals
-					PxVec3* norms = new PxVec3[numVerts];
-
-					for (PxU32 i = 0; i < numVerts; i++)
-						norms[i] = PxVec3(0.f,0.f,0.f);
-
-					for (PxU32 i = 0; i < 3*numTrigs; i+=3)
-					{
-						PxVec3 v1 = verts[trigs[i]];
-						PxVec3 v2 = verts[trigs[i+1]];
-						PxVec3 v3 = verts[trigs[i+2]];
-						PxVec3 n = -((v2-v1).cross(v3-v1));
-
-						norms[trigs[i]] += n;
-						norms[trigs[i+1]] += n;
-						norms[trigs[i+2]] += n;
-					}
-
-					for (PxU32 i = 0; i < numVerts; i++)
-						norms[i].normalize();
-
-					glEnableClientState(GL_VERTEX_ARRAY);
-					glEnableClientState(GL_NORMAL_ARRAY);
-					glVertexPointer(3, GL_FLOAT, 0, verts);
-					glNormalPointer(GL_FLOAT, sizeof(PxVec3), norms);
-					glDrawElements(GL_TRIANGLES, numTrigs*3, GL_UNSIGNED_SHORT, trigs);
-					glDisableClientState(GL_NORMAL_ARRAY);
-					glDisableClientState(GL_VERTEX_ARRAY);
-				}
+				DrawTriangleMesh(geometry);
+				break;
+			case PxGeometryType::eHEIGHTFIELD:
+				DrawHeightField(geometry);
 				break;
 			default:
 				break;
 			}
+		}
+
+		void RenderCloth(const PxCloth* cloth)
+		{
+			PxClothMeshDesc* mesh_desc = (PxClothMeshDesc*)cloth->userData;
+
+			PxU32 quad_count = mesh_desc->quads.count;
+			PxU32* quads = (PxU32*)mesh_desc->quads.data;
+
+			PxU32 numVerts = cloth->getNbParticles();
+			PxVec3* verts = new PxVec3[numVerts];
+			PxVec3* norms = new PxVec3[numVerts];
+
+			//get verts data
+			cloth->lockParticleData();
+			PxClothParticleData* readData = cloth->lockParticleData();
+			if (!readData)
+				return;
+			// copy vertex positions
+			for (PxU32 j = 0; j < numVerts; j++)
+				verts[j] = readData->particles[j].pos;
+
+			readData->unlock();
+
+			//Compute normals
+			for (PxU32 i = 0; i < numVerts; i++)
+				norms[i] = PxVec3(0.f,0.f,0.f);
+
+			for (PxU32 i = 0; i < quad_count*4; i+=4)
+			{
+				PxVec3 v0 = verts[quads[i]];
+				PxVec3 v1 = verts[quads[i+1]];
+				PxVec3 v2 = verts[quads[i+2]];
+				PxVec3 n = -((v1-v0).cross(v2-v0));
+
+				norms[quads[i]] += n;
+				norms[quads[i+1]] += n;
+				norms[quads[i+2]] += n;
+				norms[quads[i+3]] += n;
+			}
+
+			for (PxU32 i = 0; i < numVerts; i++)
+				norms[i].normalize();
+
+			PxTransform pose = cloth->getGlobalPose();
+			PxMat44 shapePose(pose);
+
+			glPushMatrix();						
+			glMultMatrixf((float*)&shapePose);
+
+			glEnableClientState(GL_VERTEX_ARRAY);
+			glEnableClientState(GL_NORMAL_ARRAY);
+
+			glVertexPointer(3, GL_FLOAT, sizeof(PxVec3), verts);
+			glNormalPointer(GL_FLOAT, sizeof(PxVec3), norms);
+
+			glDrawElements(GL_QUADS, quad_count*4, GL_UNSIGNED_INT, quads);
+
+			glDisableClientState(GL_NORMAL_ARRAY);
+			glDisableClientState(GL_VERTEX_ARRAY);
+
+			glPopMatrix();
 		}
 
 		void reshapeCallback(int width, int height)
@@ -247,18 +274,20 @@ namespace VisualDebugger
 		void Init()
 		{
 			// Setup default render states
+			PxReal specular_material[]	= { .2f, .2f, .2f, 1.f };
 			glEnable(GL_DEPTH_TEST);
 			glEnable(GL_COLOR_MATERIAL);
+			glColorMaterial(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE);
+//			glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 64.f);
+//			glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular_material);
 
 			// Setup lighting
 			glEnable(GL_LIGHTING);
-			PxReal ambientColor[]	= { .25f, .25f, .25f, 1.f };
-			PxReal diffuseColor[]	= { 1.f, 1.f, 1.f, 1.f };		
-			PxReal specularColor[]	= { 1.f, 1.f, 1.f, 1.f };		
-			PxReal position[]		= { 1.f, 1.f, -1.f, 1.f };		
+			PxReal ambientColor[]	= { 0.2f, 0.2f, 0.2f, 1.f };
+			PxReal diffuseColor[]	= { 0.7f, 0.7f, 0.7f, 1.f };		
+			PxReal position[]		= { 50.f, 50.f, 100.f, 0.f };		
 			glLightfv(GL_LIGHT0, GL_AMBIENT, ambientColor);
 			glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseColor);
-			glLightfv(GL_LIGHT0, GL_SPECULAR, specularColor);
 			glLightfv(GL_LIGHT0, GL_POSITION, position);
 			glEnable(GL_LIGHT0);
 		}
@@ -277,145 +306,77 @@ namespace VisualDebugger
 			gluLookAt(cameraEye.x, cameraEye.y, cameraEye.z, cameraEye.x + cameraDir.x, cameraEye.y + cameraDir.y, cameraEye.z + cameraDir.z, 0.f, 1.f, 0.f);
 		}
 
-		void Render(PxRigidActor** actors, const PxU32 numActors)
-		{
-			PxVec3 shadow_color = default_color*0.6;
-			PxShape* shapes[MAX_NUM_ACTOR_SHAPES];
-			for(PxU32 i=0;i<numActors;i++)
-			{
-				const PxU32 nbShapes = actors[i]->getNbShapes();
-				PX_ASSERT(nbShapes <= MAX_NUM_ACTOR_SHAPES);
-				actors[i]->getShapes(shapes, nbShapes);
-				bool sleeping = actors[i]->isRigidDynamic() ? actors[i]->isRigidDynamic()->isSleeping() : false;
-
-				for(PxU32 j=0;j<nbShapes;j++)
-				{
-					PxTransform pose = PxShapeExt::getGlobalPose(*shapes[j], *actors[i]);
-					PxGeometryHolder h = shapes[j]->getGeometry();
-					//move the plane slightly down to avoid visual artefacts
-					if (h.getType() == PxGeometryType::ePLANE)
-					{
-						pose.q *= PxQuat(PxHalfPi, PxVec3(0.f, 0.f, 1.f));
-						pose.p += PxVec3(0,-0.01,0);
-					}
-
-					PxMat44 shapePose(pose);
-
-					// render object
-					glPushMatrix();						
-					glMultMatrixf((float*)&shapePose);
-
-					PxVec3 actor_color = default_color;
-
-					if (actors[i]->userData)
-					{
-						actor_color = *((PxVec3*)actors[i]->userData);
-						if (h.getType() == PxGeometryType::ePLANE)
-						{
-							shadow_color = actor_color*0.6;
-						}
-					}
-
-					if (h.getType() == PxGeometryType::ePLANE)
-						glDisable(GL_LIGHTING);
-
-					glColor4f(actor_color.x, actor_color.y, actor_color.z, 1.f);
-
-					RenderGeometry(h);
-
-					if (h.getType() == PxGeometryType::ePLANE)
-						glEnable(GL_LIGHTING);
-
-					glPopMatrix();
-
-					if(show_shadows && (h.getType() != PxGeometryType::ePLANE))
-					{
-						const PxVec3 shadowDir(-0.7071067f, -0.7071067f, -0.7071067f);
-						const PxReal shadowMat[]={ 1,0,0,0, -shadowDir.x/shadowDir.y,0,-shadowDir.z/shadowDir.y,0, 0,0,1,0, 0,0,0,1 };
-						glPushMatrix();						
-						glMultMatrixf(shadowMat);
-						glMultMatrixf((float*)&shapePose);
-						glDisable(GL_LIGHTING);
-						glColor4f(shadow_color.x, shadow_color.y, shadow_color.z, 1.f);
-						RenderGeometry(h);
-						glEnable(GL_LIGHTING);
-						glPopMatrix();
-					}
-				}
-			}
-		}
-
 		void Render(PxActor** actors, const PxU32 numActors)
 		{
-			for(PxU32 i = 0; i < numActors; i++)
+			PxVec3 shadow_color = default_color*0.9;
+			for(PxU32 i=0;i<numActors;i++)
 			{
 				if (actors[i]->isCloth())
 				{
-					PxCloth* cloth = (PxCloth*)actors[i];
-
-					PxClothMeshDesc* mesh_desc = (PxClothMeshDesc*)cloth->userData;
-
-					PxU32 quad_count = mesh_desc->quads.count;
-					PxU32* quads = (PxU32*)mesh_desc->quads.data;
-
-					//get verts data
-					cloth->lockParticleData();
-					PxClothParticleData* readData = cloth->lockParticleData();
-					if (!readData)
-						break;
-
-					// copy vertex positions
-					PxU32 numVerts = cloth->getNbParticles();
-					PxVec3* verts = new PxVec3[numVerts];
-					PxVec3* norms = new PxVec3[numVerts];
-					for (PxU32 j = 0; j < numVerts; j++)
-						verts[j] = readData->particles[j].pos;
-
-					readData->unlock();
-
-					//Compute normals
-					for (PxU32 i = 0; i < numVerts; i++)
-						norms[i] = PxVec3(0.f,0.f,0.f);
-
-					for (PxU32 i = 0; i < quad_count*4; i+=4)
-					{
-						PxVec3 v1 = verts[quads[i]];
-						PxVec3 v2 = verts[quads[i+1]];
-						PxVec3 v3 = verts[quads[i+2]];
-						PxVec3 n = -((v2-v1).cross(v3-v1));
-
-						norms[quads[i]] += n;
-						norms[quads[i+1]] += n;
-						norms[quads[i+2]] += n;
-						norms[quads[i+3]] += n;
-					}
-
-					for (PxU32 i = 0; i < numVerts; i++)
-						norms[i].normalize();
-
-					PxTransform pose = cloth->getGlobalPose();
-					PxMat44 shapePose(pose);
-
-					glEnable(GL_LIGHTING);
-
-					glPushMatrix();						
-					glMultMatrixf((float*)&shapePose);
-					glColor4f(0.9f, 0.f, 0.9f, 1.f);
-
-					glEnableClientState(GL_VERTEX_ARRAY);
-					glEnableClientState(GL_NORMAL_ARRAY);
-
-					glVertexPointer(3, GL_FLOAT, sizeof(PxVec3), verts);
-					glNormalPointer(GL_FLOAT, sizeof(PxVec3), norms);
-
-					glDrawElements(GL_QUADS, quad_count*4, GL_UNSIGNED_INT, quads);
-
-					glDisableClientState(GL_NORMAL_ARRAY);
-					glDisableClientState(GL_VERTEX_ARRAY);
-
-					glPopMatrix();
-
+					RenderCloth((PxCloth*)actors[i]);
 				}
+				else if (actors[i]->isRigidActor())
+				{
+					PxRigidActor* rigid_actor = (PxRigidActor*)actors[i];
+					std::vector<PxShape*> shapes(rigid_actor->getNbShapes());
+					rigid_actor->getShapes((PxShape**)&shapes.front(), shapes.size());
+
+					for(PxU32 j = 0; j < shapes.size(); j++)
+					{
+						const PxShape* shape = shapes[j];
+						PxTransform pose = PxShapeExt::getGlobalPose(*shape, *shape->getActor());
+						PxGeometryHolder h = shape->getGeometry();
+						//move the plane slightly down to avoid visual artefacts
+						if (h.getType() == PxGeometryType::ePLANE)
+						{
+							pose.q *= PxQuat(PxHalfPi, PxVec3(0.f, 0.f, 1.f));
+							pose.p += PxVec3(0,-0.01,0);
+						}
+
+						PxMat44 shapePose(pose);
+						// render object
+						glPushMatrix();						
+						glMultMatrixf((float*)&shapePose);
+
+						PxVec3 shape_color = default_color;
+
+						if (shape->userData)
+						{
+							shape_color = *((PxVec3*)shape->userData);
+							if (h.getType() == PxGeometryType::ePLANE)
+							{
+								shadow_color = shape_color*0.9;
+							}
+						}
+
+						if (h.getType() == PxGeometryType::ePLANE)
+							glDisable(GL_LIGHTING);
+
+						glColor4f(shape_color.x, shape_color.y, shape_color.z, 1.f);
+
+						RenderGeometry(h);
+
+						if (h.getType() == PxGeometryType::ePLANE)
+							glEnable(GL_LIGHTING);
+
+						glPopMatrix();
+
+						if(show_shadows && (h.getType() != PxGeometryType::ePLANE))
+						{
+							const PxVec3 shadowDir(-0.7071067f, -0.7071067f, -0.7071067f);
+							const PxReal shadowMat[]={ 1,0,0,0, -shadowDir.x/shadowDir.y,0,-shadowDir.z/shadowDir.y,0, 0,0,1,0, 0,0,0,1 };
+							glPushMatrix();						
+							glMultMatrixf(shadowMat);
+							glMultMatrixf((float*)&shapePose);
+							glDisable(GL_LIGHTING);
+							glColor4f(shadow_color.x, shadow_color.y, shadow_color.z, 1.f);
+							RenderGeometry(h);
+							glEnable(GL_LIGHTING);
+							glPopMatrix();
+						}
+					}
+				}
+
 			}
 		}
 

@@ -32,32 +32,45 @@ namespace PhysicsEngine
 	{
 	protected:
 		PxTransform pose;
-		PxVec3 color;
 		PxActor* actor;
-
-		///a pure virtual function that creates the actor following your implementation
-		virtual void Create()=0;
+		std::vector<PxVec3> colors;
 
 	public:
 		///Constructor
-		Actor(const PxTransform& pose, const PxVec3& color);
-		
-		///Pointer to PxActor
-		PxActor* PxActor();
+		Actor(const PxTransform& pose);
 
-		PxRigidActor* PxRigidActor() { return (physx::PxRigidActor*)PxActor(); }
-
-		///Get color
-		const PxVec3& Color()
+		void Color(PxVec3 new_color, PxU32 shape_indx=0)
 		{
-			return color;
+			PxShape* shape = GetShape(shape_indx);
+			if (shape)
+				colors[shape_indx] = new_color;
+		}
+
+		PxVec3* Color(PxU32 shape_indx=0)
+		{
+			if (shape_indx < colors.size())
+				return &colors[shape_indx];
+			else 
+				return 0;			
 		}
 		
-		//Set color
-		void Color(PxVec3 new_color)
+		PxShape* GetShape(PxU32 shape_indx=0)
 		{
-			color = new_color;
+			if (actor->isRigidActor())
+			{
+				std::vector<PxShape*> shapes(((PxRigidActor*)actor)->getNbShapes());
+				if (shape_indx < ((PxRigidActor*)actor)->getShapes((PxShape**)&shapes.front(),shapes.size()))
+					return shapes[shape_indx];
+			}
+
+			return 0;
 		}
+
+		void AddShape(PxGeometry geometry)
+		{
+		}
+
+		PxActor* Get();
 	};
 
 	///Generic scene class
@@ -72,6 +85,10 @@ namespace PhysicsEngine
 		PxRigidDynamic* selected_actor;
 		//original and modified colour of the selected actor
 		PxVec3 sactor_color, sactor_color_orig;
+
+		void HighlightOn(PxRigidDynamic* actor);
+
+		void HighlightOff(PxRigidDynamic* actor);
 
 	public:
 		///Init the scene
@@ -110,10 +127,7 @@ namespace PhysicsEngine
 		void SelectNextActor();
 
 		///a list with all actors
-		std::vector<PxRigidActor*> GetAllActors();
-
-		///a list with all cloth actors
-		std::vector<PxActor*> GetAllCloths();
+		std::vector<PxActor*> GetAllActors();
 	};
 }
 

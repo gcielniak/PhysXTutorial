@@ -83,16 +83,13 @@ namespace PhysicsEngine
 	}
 
 	///Actor methods
-	Actor::Actor(const PxTransform& _pose, const PxVec3& _color)
-		: pose(_pose), color(_color), actor(0)
+	Actor::Actor(const PxTransform& _pose)
+		: pose(_pose), actor(0)
 	{
 	}
 
-	PxActor* Actor::PxActor()
+	PxActor* Actor::Get()
 	{
-		if (!actor)
-			Create();
-
 		return actor;
 	}
 
@@ -141,7 +138,7 @@ namespace PhysicsEngine
 
 	void Scene::Add(Actor& actor)
 	{
-		px_scene->addActor(*actor.PxActor());
+		px_scene->addActor(*actor.Get());
 	}
 
 	PxScene* Scene::Get() 
@@ -172,18 +169,15 @@ namespace PhysicsEngine
 
 	void Scene::SelectNextActor()
 	{
-		PxU32 nbActors = px_scene->getNbActors(PxActorTypeSelectionFlag::eRIGID_DYNAMIC);
-		if(nbActors)
+		std::vector<PxRigidDynamic*> actors(px_scene->getNbActors(PxActorTypeSelectionFlag::eRIGID_DYNAMIC));
+		if (px_scene->getActors(PxActorTypeSelectionFlag::eRIGID_DYNAMIC, (PxActor**)&actors.front(), actors.size()))
 		{
-			std::vector<PxRigidDynamic*> actors(nbActors);
-			px_scene->getActors(PxActorTypeSelectionFlag::eRIGID_DYNAMIC, (PxActor**)&actors[0], nbActors);
 			if (selected_actor)
 			{
 				for (unsigned int i = 0; i < actors.size(); i++)
 					if (selected_actor == actors[i])
 					{
-						//restore the original color
-						*((PxVec3*)selected_actor->userData) = sactor_color_orig;
+						HighlightOff(selected_actor);
 						//select the next actor
 						selected_actor = actors[(i+1)%actors.size()];
 						break;
@@ -193,31 +187,39 @@ namespace PhysicsEngine
 			{
 				selected_actor = actors[0];
 			}
-			//store the original colour and adjust brightness of the selected actor
-			sactor_color_orig = *((PxVec3*)selected_actor->userData);
-			*((PxVec3*)selected_actor->userData) += PxVec3(.2f,.2f,.2f);
+			HighlightOn(selected_actor);
 		}
 		else
 			selected_actor = 0;
 	}
 
-	std::vector<PxRigidActor*> Scene::GetAllActors()
+	std::vector<PxActor*> Scene::GetAllActors()
 	{
-		physx::PxActorTypeSelectionFlags selection_flag = PxActorTypeSelectionFlag::eRIGID_DYNAMIC | PxActorTypeSelectionFlag::eRIGID_STATIC;
-		PxU32 nbActors = px_scene->getNbActors(selection_flag);
-		std::vector<PxRigidActor*> actors(nbActors);
-		if(nbActors)
-			px_scene->getActors(selection_flag, (PxActor**)&actors[0], nbActors);
+		physx::PxActorTypeSelectionFlags selection_flag = PxActorTypeSelectionFlag::eRIGID_DYNAMIC | PxActorTypeSelectionFlag::eRIGID_STATIC | 
+			PxActorTypeSelectionFlag::eCLOTH;
+		std::vector<PxActor*> actors(px_scene->getNbActors(selection_flag));
+		px_scene->getActors(selection_flag, (PxActor**)&actors.front(), actors.size());
 		return actors;
 	}
 
-	std::vector<PxActor*> Scene::GetAllCloths()
+	void Scene::HighlightOn(PxRigidDynamic* actor)
 	{
-		physx::PxActorTypeSelectionFlags selection_flag = PxActorTypeSelectionFlag::eCLOTH;
-		PxU32 nbActors = px_scene->getNbActors(selection_flag);
-		std::vector<PxActor*> actors(nbActors);
-		if(nbActors)
-			px_scene->getActors(selection_flag, (PxActor**)&actors[0], nbActors);
-		return actors;
+		//store the original colour and adjust brightness of the selected actor
+		std::vector<PxShape*> shapes(actor->getNbShapes());
+		actor->getShapes((PxShape**)&shapes.front(),shapes.size());
+		if (shapes[0]->userData)
+		{
+			sactor_color_orig = *((PxVec3*)shapes[0]->userData);
+			*((PxVec3*)shapes[0]->userData) += PxVec3(.2f,.2f,.2f);
+		}
+	}
+
+	void Scene::HighlightOff(PxRigidDynamic* actor)
+	{
+		//restore the original color
+		std::vector<PxShape*> shapes(actor->getNbShapes());
+		actor->getShapes((PxShape**)&shapes.front(),shapes.size());
+		if (shapes[0]->userData)
+			*((PxVec3*)shapes[0]->userData) = sactor_color_orig;
 	}
 }

@@ -21,9 +21,6 @@ namespace VisualDebugger
 		void Start(const PxVec3& cameraEye, const PxVec3& cameraDir);
 
 		///Render actors
-		void Render(PxRigidActor** actors, const PxU32 numActors);
-
-		///Render cloth actors
 		void Render(PxActor** actors, const PxU32 numActors);
 
 		///Render debug information

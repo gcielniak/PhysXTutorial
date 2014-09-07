@@ -14,17 +14,35 @@ namespace PhysicsEngine
 
 	public:
 		//A plane with default paramters: XZ plane centred at (0,0,0)
-		Plane(PxVec3 _normal=PxVec3(0.f, 1.f, 0.f), PxReal _distance=0.f,
-			const PxVec3& color=PxVec3(.5f,.5f,.5f)) 
-			: Actor(PxTransform(PxIdentity), color), normal(_normal), distance(_distance)
-		{
-		}
-
-		virtual void Create()
+		Plane(PxVec3 _normal=PxVec3(0.f, 1.f, 0.f), PxReal _distance=0.f) 
+			: Actor(PxTransform(PxIdentity)), normal(_normal), distance(_distance)
 		{
 			PxRigidStatic* plane = PxCreatePlane(*GetPhysics(), PxPlane(normal, distance), *GetDefaultMaterial());
 			actor = plane;
-			actor->userData = &color; //pass color parameter to renderer
+		}
+	};
+
+	///Sphere class
+	class Sphere : public Actor
+	{
+		PxReal radius;
+		PxReal density;
+		PxShape* shape;
+
+	public:
+		//a Box with default parameters:
+		// - pose in 0,0,0
+		// - dimensions: 1m x 1m x 1m
+		// - denisty: 1kg/m^3
+		Sphere(PxTransform pose=PxTransform(PxIdentity), PxReal _radius=1.f, PxReal _density=1.f) 
+			: Actor(pose), radius(_radius), density(_density)
+		{ 
+			PxRigidDynamic* sphere = GetPhysics()->createRigidDynamic(pose);
+			shape = sphere->createShape(PxSphereGeometry(radius), *GetDefaultMaterial());
+			PxRigidBodyExt::setMassAndUpdateInertia(*sphere, density);
+			actor = sphere;
+			colors.push_back(PxVec3(.0f,.0f,.0f));
+			shape->userData = &colors.at(0);
 		}
 	};
 
@@ -40,30 +58,13 @@ namespace PhysicsEngine
 		// - pose in 0,0,0
 		// - dimensions: 1m x 1m x 1m
 		// - denisty: 1kg/m^3
-		Box(PxTransform pose=PxTransform(PxIdentity), PxVec3 _dimensions=PxVec3(.5f,.5f,.5f), PxReal _density=1.f,
-			const PxVec3& _color=PxVec3(.9f,0.f,0.f)) 
-			: Actor(pose, _color), dimensions(_dimensions), density(_density)
+		Box(PxTransform pose=PxTransform(PxIdentity), PxVec3 _dimensions=PxVec3(.5f,.5f,.5f), PxReal _density=1.f) 
+			: Actor(pose), dimensions(_dimensions), density(_density)
 		{ 
-		}
-
-		virtual void Create()
-		{
 			PxRigidDynamic* box = GetPhysics()->createRigidDynamic(pose);
 			shape = box->createShape(PxBoxGeometry(dimensions), *GetDefaultMaterial());
 			PxRigidBodyExt::setMassAndUpdateInertia(*box, density);
 			actor = box;
-			actor->userData = &color; //pass color parameter to renderer
-		}
-
-		PxRigidDynamic* Get() 
-		{
-			return (PxRigidDynamic*)actor; 
-		}
-
-		//get a single shape
-		PxShape* GetShape()
-		{
-			return shape;
 		}
 	};
 
@@ -73,19 +74,13 @@ namespace PhysicsEngine
 		PxReal density;
 		PxShape* shape;
 	public:
-		Capsule(PxTransform pose=PxTransform(PxIdentity), PxVec2 _dimensions=PxVec2(1.f,1.f), PxReal _density=1.f,
-			const PxVec3& _color=PxVec3(.9f,0.f,0.f)) 
-			: Actor(pose, _color), dimensions(_dimensions), density(_density)
-		{
-		}
-
-		virtual void Create()
+		Capsule(PxTransform pose=PxTransform(PxIdentity), PxVec2 _dimensions=PxVec2(1.f,1.f), PxReal _density=1.f) 
+			: Actor(pose), dimensions(_dimensions), density(_density)
 		{
 			PxRigidDynamic* capsule = GetPhysics()->createRigidDynamic(pose);
 			shape = capsule->createShape(PxCapsuleGeometry(dimensions.x, dimensions.y), *GetDefaultMaterial());
 			PxRigidBodyExt::setMassAndUpdateInertia(*capsule, density);
 			actor = capsule;
-			actor->userData = &color; //pass color parameter to renderer
 		}
 	};
 
@@ -98,10 +93,13 @@ namespace PhysicsEngine
 
 	public:
 		//constructor
-		ConvexMesh(const PxVec3* _verts, size_t _verts_size, PxTransform pose=PxTransform(PxIdentity), PxReal _density=1.f,
-			const PxVec3& _color=PxVec3(.9f,0.f,0.f))
-			: Actor(pose, _color), density(_density), verts(_verts), verts_size(_verts_size)
+		ConvexMesh(const PxVec3* _verts, size_t _verts_size, PxTransform pose=PxTransform(PxIdentity), PxReal _density=1.f)
+			: Actor(pose), density(_density), verts(_verts), verts_size(_verts_size)
 		{
+			PxRigidDynamic* convex_mesh = GetPhysics()->createRigidDynamic(pose);
+			PxShape* shape = convex_mesh->createShape(PxConvexMeshGeometry(CookMesh()), *GetDefaultMaterial());
+			PxRigidBodyExt::setMassAndUpdateInertia(*convex_mesh, density);
+			actor = convex_mesh;
 		}
 
 		//mesh cooking (preparation)
@@ -123,20 +121,6 @@ namespace PhysicsEngine
 
 			return GetPhysics()->createConvexMesh(input);
 		}
-
-		virtual void Create()
-		{
-			PxRigidDynamic* convex_mesh = GetPhysics()->createRigidDynamic(pose);
-			convex_mesh->createShape(PxConvexMeshGeometry(CookMesh()), *GetDefaultMaterial());
-			PxRigidBodyExt::setMassAndUpdateInertia(*convex_mesh, density);
-			actor = convex_mesh;
-			actor->userData = &color; //pass color parameter to renderer
-		}
-
-		PxRigidDynamic* Get() 
-		{
-			return (PxRigidDynamic*)actor; 
-		}
 	};
 
 	///The TriangleMesh class
@@ -150,10 +134,12 @@ namespace PhysicsEngine
 
 	public:
 		//constructor
-		TriangleMesh(const PxVec3* _verts, size_t _verts_size, const PxU32* _trigs, size_t _trigs_size, PxTransform pose=PxTransform(PxIdentity), PxReal _density=1.f,
-			const PxVec3& _color=PxVec3(.9f,0.f,0.f))
-			: Actor(pose, _color), density(_density), verts(_verts), verts_size(_verts_size), trigs(_trigs), trigs_size(_trigs_size)
+		TriangleMesh(const PxVec3* _verts, size_t _verts_size, const PxU32* _trigs, size_t _trigs_size, PxTransform pose=PxTransform(PxIdentity), PxReal _density=1.f)
+			: Actor(pose), density(_density), verts(_verts), verts_size(_verts_size), trigs(_trigs), trigs_size(_trigs_size)
 		{
+			PxRigidStatic* triangle_mesh = GetPhysics()->createRigidStatic(pose);
+			PxShape* shape = triangle_mesh->createShape(PxTriangleMeshGeometry(CookMesh()), *GetDefaultMaterial());
+			actor = triangle_mesh;
 		}
 
 		//mesh cooking (preparation)
@@ -176,19 +162,39 @@ namespace PhysicsEngine
 
 			return GetPhysics()->createTriangleMesh(input);
 		}
+	};
 
-		virtual void Create()
-		{
-			PxRigidDynamic* triangle_mesh = GetPhysics()->createRigidDynamic(pose);
-			triangle_mesh->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, true);
-			triangle_mesh->createShape(PxTriangleMeshGeometry(CookMesh()), *GetDefaultMaterial());
-			actor = triangle_mesh;
-			actor->userData = &color; //pass color parameter to renderer
-		}
+	///The HeightField class
+	class HeightField : public Actor
+	{
+		PxReal density;
 
-		PxRigidDynamic* Get() 
+	public:
+		//constructor
+		HeightField(PxTransform pose=PxTransform(PxIdentity), PxReal _density=1.f,
+			const PxVec3& _color=PxVec3(.9f,0.f,0.f))
+			: Actor(pose), density(_density)
 		{
-			return (PxRigidDynamic*)actor; 
+			PxU32 numRows = 4;
+			PxU32 numCols = 4;
+
+			PxHeightFieldSample* samples = new PxHeightFieldSample[numRows*numCols];
+
+			for (PxU32 i = 0; i < numRows*numCols; i++)
+				samples[i].height = 0;
+
+			PxHeightFieldDesc hfDesc;
+			hfDesc.format             = PxHeightFieldFormat::eS16_TM;
+			hfDesc.nbColumns          = numCols;
+			hfDesc.nbRows             = numRows;
+			hfDesc.samples.data       = samples;
+			hfDesc.samples.stride     = sizeof(PxHeightFieldSample);
+
+			PxHeightFieldGeometry hfGeom(GetPhysics()->createHeightField(hfDesc), PxMeshGeometryFlags(), 1.f, 1.f, 1.f);
+			PxRigidStatic* hf = GetPhysics()->createRigidStatic(pose);
+			PxShape* shape = hf->createShape(hfGeom, *GetDefaultMaterial());
+			actor = hf;
+			shape->userData = &shape;
 		}
 	};
 
@@ -203,11 +209,7 @@ namespace PhysicsEngine
 
 		//constructor
 		Cloth(PxTransform pose=PxTransform(PxIdentity), const PxVec2& _size=PxVec2(1.f,1.f), PxU32 _width=1, PxU32 _height=1, bool _fix_top = true, const PxVec3& _color=PxVec3(.9f,0.f,0.f))
-			: Actor(pose, _color), size(_size), width(_width), height(_height), fix_top(_fix_top)
-		{
-		}
-
-		virtual void Create()
+			: Actor(pose), size(_size), width(_width), height(_height), fix_top(_fix_top)
 		{
 			//prepare vertices
 			PxReal w_step = size.x/width;
@@ -217,54 +219,49 @@ namespace PhysicsEngine
 			PxU32* primitives = new PxU32[width*height*4];
 
 			for (PxU32 j = 0; j < (height+1); j++)
-			for (PxU32 i = 0; i < (width+1); i++)
-			{
-				PxU32 offset = i + j*(width+1);
-				vertices[offset].pos = PxVec3(w_step*i,0.f,h_step*j);
-				if (fix_top && (j == 0)) //fix the top row of vertices
-					vertices[offset].invWeight = 0.f;
-				else
-					vertices[offset].invWeight = 1.f;
-			}
+				for (PxU32 i = 0; i < (width+1); i++)
+				{
+					PxU32 offset = i + j*(width+1);
+					vertices[offset].pos = PxVec3(w_step*i,0.f,h_step*j);
+					if (fix_top && (j == 0)) //fix the top row of vertices
+						vertices[offset].invWeight = 0.f;
+					else
+						vertices[offset].invWeight = 1.f;
+				}
 
-			for (PxU32 j = 0; j < height; j++)
-			for (PxU32 i = 0; i < width; i++)
-			{
-				PxU32 offset = (i + j*width)*4;
-				primitives[offset + 0] = (i+0) + (j+0)*(width+1);
-				primitives[offset + 1] = (i+1) + (j+0)*(width+1);
-				primitives[offset + 2] = (i+1) + (j+1)*(width+1);
-				primitives[offset + 3] = (i+0) + (j+1)*(width+1);
-			}
+				for (PxU32 j = 0; j < height; j++)
+					for (PxU32 i = 0; i < width; i++)
+					{
+						PxU32 offset = (i + j*width)*4;
+						primitives[offset + 0] = (i+0) + (j+0)*(width+1);
+						primitives[offset + 1] = (i+1) + (j+0)*(width+1);
+						primitives[offset + 2] = (i+1) + (j+1)*(width+1);
+						primitives[offset + 3] = (i+0) + (j+1)*(width+1);
+					}
 
-			//init cloth mesh description
-			meshDesc.points.data = vertices;
-			meshDesc.points.count = (width+1)*(height+1);
-			meshDesc.points.stride = sizeof(PxClothParticle);
+					//init cloth mesh description
+					meshDesc.points.data = vertices;
+					meshDesc.points.count = (width+1)*(height+1);
+					meshDesc.points.stride = sizeof(PxClothParticle);
 
-			meshDesc.invMasses.data = &vertices->invWeight;
-			meshDesc.invMasses.count = (width+1)*(height+1);
-			meshDesc.invMasses.stride = sizeof(PxClothParticle);
+					meshDesc.invMasses.data = &vertices->invWeight;
+					meshDesc.invMasses.count = (width+1)*(height+1);
+					meshDesc.invMasses.stride = sizeof(PxClothParticle);
 
-			meshDesc.quads.data = primitives;
-			meshDesc.quads.count = width*height;
-			meshDesc.quads.stride = sizeof(PxU32) * 4;
+					meshDesc.quads.data = primitives;
+					meshDesc.quads.count = width*height;
+					meshDesc.quads.stride = sizeof(PxU32) * 4;
 
-			//create cloth fabric (cooking)
-			PxClothFabric* fabric = PxClothFabricCreate(*GetPhysics(), meshDesc, PxVec3(0, -1, 0));
+					//create cloth fabric (cooking)
+					PxClothFabric* fabric = PxClothFabricCreate(*GetPhysics(), meshDesc, PxVec3(0, -1, 0));
 
-			//create cloth
-			PxCloth* cloth = GetPhysics()->createCloth(pose, *fabric, vertices, PxClothFlags());
-			//collisions with the scene objects
-			cloth->setClothFlag(PxClothFlag::eSCENE_COLLISION, true);
+					//create cloth
+					PxCloth* cloth = GetPhysics()->createCloth(pose, *fabric, vertices, PxClothFlags());
+					//collisions with the scene objects
+					cloth->setClothFlag(PxClothFlag::eSCENE_COLLISION, true);
 
-			actor = cloth;
-			actor->userData = &meshDesc; //pass a color parameter to the renderer
-		}
-
-		PxCloth* Get() 
-		{
-			return (PxCloth*)actor; 
+					actor = cloth;
+					actor->userData = &meshDesc;
 		}
 	};
 }

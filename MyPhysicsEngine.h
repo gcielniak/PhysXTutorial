@@ -15,7 +15,7 @@ namespace PhysicsEngine
 
 	public:
 		Box2(PxTransform pose=PxTransform(PxIdentity), PxReal _density=1.f,	const PxVec3& _color=PxVec3(.9f,0.f,0.f), const PxMaterial* _material=GetDefaultMaterial())
-			: Actor(pose, _color), density(_density), material(_material)
+			: Actor(pose), density(_density), material(_material)
 		{
 		}
 
@@ -27,12 +27,6 @@ namespace PhysicsEngine
 			shape2->setLocalPose(PxTransform(PxVec3(2.f,.0f,.0f)));
 			PxRigidBodyExt::setMassAndUpdateInertia(*box, density);
 			actor = box;
-			actor->userData = &color; //pass color parameter to renderer
-		}
-
-		PxRigidDynamic* Get() 
-		{
-			return (PxRigidDynamic*)actor; 
 		}
 	};
 
@@ -90,10 +84,10 @@ namespace PhysicsEngine
 			Box *top = new Box(PxTransform(PxVec3(0.f,dimensions.y+thickness,0.f)),PxVec3(dimensions.x,thickness,dimensions.z));
 			scene->Add(*bottom);
 			scene->Add(*top);
-			DistanceJoint spring1(bottom->Get(),PxTransform(PxVec3(dimensions.x,thickness,dimensions.z)),top->Get(),PxTransform(PxVec3(dimensions.x,-dimensions.y,dimensions.z)),stiffness,damping);
-			DistanceJoint spring2(bottom->Get(),PxTransform(PxVec3(dimensions.x,thickness,-dimensions.z)),top->Get(),PxTransform(PxVec3(dimensions.x,-dimensions.y,-dimensions.z)),stiffness,damping);
-			DistanceJoint spring3(bottom->Get(),PxTransform(PxVec3(-dimensions.x,thickness,dimensions.z)),top->Get(),PxTransform(PxVec3(-dimensions.x,-dimensions.y,dimensions.z)),stiffness,damping);
-			DistanceJoint spring4(bottom->Get(),PxTransform(PxVec3(-dimensions.x,thickness,-dimensions.z)),top->Get(),PxTransform(PxVec3(-dimensions.x,-dimensions.y,-dimensions.z)),stiffness,damping);
+			DistanceJoint spring1((PxRigidActor*)bottom->Get(),PxTransform(PxVec3(dimensions.x,thickness,dimensions.z)),(PxRigidActor*)top->Get(),PxTransform(PxVec3(dimensions.x,-dimensions.y,dimensions.z)),stiffness,damping);
+			DistanceJoint spring2((PxRigidActor*)bottom->Get(),PxTransform(PxVec3(dimensions.x,thickness,-dimensions.z)),(PxRigidActor*)top->Get(),PxTransform(PxVec3(dimensions.x,-dimensions.y,-dimensions.z)),stiffness,damping);
+			DistanceJoint spring3((PxRigidActor*)bottom->Get(),PxTransform(PxVec3(-dimensions.x,thickness,dimensions.z)),(PxRigidActor*)top->Get(),PxTransform(PxVec3(-dimensions.x,-dimensions.y,dimensions.z)),stiffness,damping);
+			DistanceJoint spring4((PxRigidActor*)bottom->Get(),PxTransform(PxVec3(-dimensions.x,thickness,-dimensions.z)),(PxRigidActor*)top->Get(),PxTransform(PxVec3(-dimensions.x,-dimensions.y,-dimensions.z)),stiffness,damping);
 		}
 	};
 
@@ -139,17 +133,19 @@ namespace PhysicsEngine
 	};
 
 	static const PxVec3 pyramid_verts[] = {PxVec3(0,1,0), PxVec3(1,0,0), PxVec3(-1,0,0), PxVec3(0,0,1), PxVec3(0,0,-1)};
-	static const PxU32 pyramid_trigs[] = {0, 1, 4, 0, 1, 3, 0, 3, 2, 0, 2, 4, 1, 2, 3, 1, 2, 4};
+	static const PxU32 pyramid_trigs[] = {1, 4, 0, 3, 1, 0, 2, 3, 0, 4, 2, 0, 3, 2, 1, 2, 4, 1};//vertices have to be specified in a counter-clockwise order to assure the right rendering results
 
 	///Custom scene class
 	class MyScene : public Scene
 	{
 		Plane* plane;
-		Box2* box;
+		Box* box;
 		Capsule* capsule;
 		Cloth* cloth;
 		ConvexMesh* pyramid;
 		TriangleMesh* pyramid_2;
+		Sphere* sphere;
+		HeightField* hf;
 		MySimulationEventCallback* my_callback;
 
 	public:
@@ -185,17 +181,23 @@ namespace PhysicsEngine
 			cloth = new Cloth(PxTransform(PxVec3(-4.f,9.f,0.f)), PxVec2(8.f,8.f), 40, 40);
 			Add(*cloth);
 
-			box = new Box2(PxTransform(PxVec3(.0f,5.f,.0f)),1.f,PxVec3(.9,.0f,.0f));
+			box = new Box(PxTransform(PxVec3(.0f,5.f,.0f)),PxVec3(1.f,.5f,.5f));
 			Add(box);
 
-			pyramid = new ConvexMesh(pyramid_verts, sizeof(pyramid_verts), PxTransform(PxVec3(-5.0f,5.f,.0f)));
+			pyramid = new ConvexMesh(pyramid_verts, sizeof(pyramid_verts), PxTransform(PxVec3(-5.0f,5.f,5.0f)));
 			Add(pyramid);
 
-			pyramid_2 = new TriangleMesh(pyramid_verts, sizeof(pyramid_verts), pyramid_trigs, sizeof(pyramid_trigs), PxTransform(PxVec3(-3.0f,1.f,3.0f)));
+			pyramid_2 = new TriangleMesh(pyramid_verts, sizeof(pyramid_verts), pyramid_trigs, sizeof(pyramid_trigs), PxTransform(PxVec3(-3.0f,0.f,5.0f)));
 			Add(pyramid_2);
 
-//			capsule = new Capsule(PxTransform(PxVec3(.0f,10.f,.0f)));
-//			Add(capsule);
+			sphere = new Sphere(PxTransform(PxVec3(1.0f,3.f,5.0f)));
+			Add(sphere);
+
+			hf = new HeightField(PxTransform(PxVec3(5.0f,3.f,6.0f)));
+			Add(hf);
+
+			capsule = new Capsule(PxTransform(PxVec3(3.0f,10.f,5.0f)));
+			Add(capsule);
 
 			//setting custom cloth parameters
 			//cloth->Get()->setStretchConfig(PxClothFabricPhaseType::eBENDING, PxClothStretchConfig(1.f));
@@ -215,9 +217,10 @@ namespace PhysicsEngine
 		void ExampleKeyReleaseHandler()
 		{
 			cerr << "I am realeased!" << endl;
-			PxTransform t = box->PxRigidActor()->getGlobalPose();
-			t.q *= PxQuat(.01f,PxVec3(1.0f,1.f,1.0f));
-			box->PxRigidActor()->setGlobalPose(t);
+			PxRigidActor* ractor = (PxRigidActor*)pyramid_2->Get();
+			PxTransform t = ractor->getGlobalPose();
+			t.q *= PxQuat(.5f,PxVec3(0.f,1.f,0.f));
+			ractor->setGlobalPose(t);
 		}
 
 		/// An example use of key presse handling
@@ -225,5 +228,16 @@ namespace PhysicsEngine
 		{
 			cerr << "I am pressed!" << endl;
 		}
+
+		/// An example use of key release handling
+		void RotatePyramid()
+		{
+			cerr << "I am realeased!" << endl;
+			PxRigidActor* ractor = (PxRigidActor*)pyramid->Get();
+			PxTransform t = ractor->getGlobalPose();
+			t.q *= PxQuat(.5f,PxVec3(0.f,1.f,0.f));
+			ractor->setGlobalPose(t);
+		}
+
 	};
 }

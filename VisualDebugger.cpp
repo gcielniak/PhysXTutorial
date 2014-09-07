@@ -137,13 +137,9 @@ namespace VisualDebugger
 
 		if ((render_mode == NORMAL) || (render_mode == BOTH))
 		{
-			std::vector<PxRigidActor*> actors = scene->GetAllActors();
+			std::vector<PxActor*> actors = scene->GetAllActors();
 			if (actors.size())
 				Renderer::Render(&actors[0], (PxU32)actors.size());
-			
-			std::vector<PxActor*> cloths = scene->GetAllCloths();
-			if (cloths.size())
-				Renderer::Render(&cloths[0], (PxU32)cloths.size());
 		}
 
 		//adjust the HUD state
@@ -175,6 +171,9 @@ namespace VisualDebugger
 		//implement your own
 		case 'R':
 			scene->ExampleKeyPressHandler();
+			break;
+		case 'T':
+			scene->RotatePyramid();
 			break;
 		default:
 			break;
