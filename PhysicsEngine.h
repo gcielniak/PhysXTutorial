@@ -26,6 +26,8 @@ namespace PhysicsEngine
 	///Create a material
 	PxMaterial* CreateMaterial(PxReal sf=0.f, PxReal df=0.f, PxReal cr=0.f);
 
+	static const PxVec3 default_color(.8f,.8f,.8f);
+
 	///Abstract Actor class
 	///Inherit from this class to create your own actors
 	class Actor
@@ -46,7 +48,7 @@ namespace PhysicsEngine
 				colors[shape_indx] = new_color;
 		}
 
-		PxVec3* Color(PxU32 shape_indx=0)
+		const PxVec3* Color(PxU32 shape_indx=0)
 		{
 			if (shape_indx < colors.size())
 				return &colors[shape_indx];
@@ -66,8 +68,23 @@ namespace PhysicsEngine
 			return 0;
 		}
 
-		void AddShape(PxGeometry geometry)
+		void AddRigidShape(const PxGeometry& geometry, PxReal density)
 		{
+			if (!actor)
+				actor = (PxActor*)GetPhysics()->createRigidDynamic(pose);
+			PxShape* shape = ((PxRigidDynamic*)actor)->createShape(geometry,*GetDefaultMaterial());
+			PxRigidBodyExt::setMassAndUpdateInertia(*(PxRigidDynamic*)actor, density);
+			colors.push_back(default_color);
+			shape->userData = &colors.back();
+		}
+
+		void AddStaticShape(const PxGeometry& geometry)
+		{
+			if (!actor)
+				actor = (PxActor*)GetPhysics()->createRigidStatic(pose);
+			PxShape* shape = ((PxRigidStatic*)actor)->createShape(geometry,*GetDefaultMaterial());
+			colors.push_back(default_color);
+			shape->userData = &colors.back();
 		}
 
 		PxActor* Get();

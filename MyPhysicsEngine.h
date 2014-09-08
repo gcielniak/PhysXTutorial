@@ -182,21 +182,26 @@ namespace PhysicsEngine
 			Add(*cloth);
 
 			box = new Box(PxTransform(PxVec3(.0f,5.f,.0f)),PxVec3(1.f,.5f,.5f));
+			box->Color(PxVec3(.9f,0.f,0.f));
 			Add(box);
 
 			pyramid = new ConvexMesh(pyramid_verts, sizeof(pyramid_verts), PxTransform(PxVec3(-5.0f,5.f,5.0f)));
+			pyramid->Color(PxVec3(0.f,.0f,0.9f));
 			Add(pyramid);
 
 			pyramid_2 = new TriangleMesh(pyramid_verts, sizeof(pyramid_verts), pyramid_trigs, sizeof(pyramid_trigs), PxTransform(PxVec3(-3.0f,0.f,5.0f)));
+			pyramid_2->Color(PxVec3(0.f,.9f,0.f));
 			Add(pyramid_2);
 
 			sphere = new Sphere(PxTransform(PxVec3(1.0f,3.f,5.0f)));
+			sphere->Color(PxVec3(.9f,.9f,0.f));
 			Add(sphere);
 
 			hf = new HeightField(PxTransform(PxVec3(5.0f,3.f,6.0f)));
 			Add(hf);
 
 			capsule = new Capsule(PxTransform(PxVec3(3.0f,10.f,5.0f)));
+			capsule->Color(PxVec3(.9f,0.f,.9f));
 			Add(capsule);
 
 			//setting custom cloth parameters
