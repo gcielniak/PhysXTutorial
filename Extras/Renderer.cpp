@@ -73,8 +73,8 @@ namespace VisualDebugger
 			GLUquadric* qobj = gluNewQuadric();
 			gluQuadricNormals(qobj, GLU_SMOOTH);
 			gluCylinder(qobj, radius, radius, halfHeight, render_detail, render_detail);
-			glPopMatrix();
 			gluDeleteQuadric(qobj);
+			glPopMatrix();
 		}
 
 		void DrawConvexMesh(const PxGeometryHolder& geometry)
@@ -149,6 +149,9 @@ namespace VisualDebugger
 					vertices[i * nbCols + j] = PxVec3(PxReal(i) * rs, PxReal(sampleBuffer[j + (i*nbCols)].height) * hs, PxReal(j) * cs);
 				}
 			}
+
+			delete sampleBuffer;
+			delete vertices;
 		}
 
 		void RenderGeometry(const PxGeometryHolder& geometry)
@@ -188,24 +191,20 @@ namespace VisualDebugger
 			PxU32 quad_count = mesh_desc->quads.count;
 			PxU32* quads = (PxU32*)mesh_desc->quads.data;
 
-			PxU32 numVerts = cloth->getNbParticles();
-			PxVec3* verts = new PxVec3[numVerts];
-			PxVec3* norms = new PxVec3[numVerts];
+			std::vector<PxVec3> verts(cloth->getNbParticles());
+			std::vector<PxVec3> norms(verts.size(), PxVec3(0.f,0.f,0.f));
 
 			//get verts data
 			cloth->lockParticleData();
-			PxClothParticleData* readData = cloth->lockParticleData();
-			if (!readData)
+
+			PxClothParticleData* particle_data = cloth->lockParticleData();
+			if (!particle_data)
 				return;
 			// copy vertex positions
-			for (PxU32 j = 0; j < numVerts; j++)
-				verts[j] = readData->particles[j].pos;
+			for (PxU32 j = 0; j < verts.size(); j++)
+				verts[j] = particle_data->particles[j].pos;
 
-			readData->unlock();
-
-			//Compute normals
-			for (PxU32 i = 0; i < numVerts; i++)
-				norms[i] = PxVec3(0.f,0.f,0.f);
+			particle_data->unlock();
 
 			for (PxU32 i = 0; i < quad_count*4; i+=4)
 			{
@@ -220,7 +219,7 @@ namespace VisualDebugger
 				norms[quads[i+3]] += n;
 			}
 
-			for (PxU32 i = 0; i < numVerts; i++)
+			for (PxU32 i = 0; i < norms.size(); i++)
 				norms[i].normalize();
 
 			PxTransform pose = cloth->getGlobalPose();
@@ -232,8 +231,8 @@ namespace VisualDebugger
 			glEnableClientState(GL_VERTEX_ARRAY);
 			glEnableClientState(GL_NORMAL_ARRAY);
 
-			glVertexPointer(3, GL_FLOAT, sizeof(PxVec3), verts);
-			glNormalPointer(GL_FLOAT, sizeof(PxVec3), norms);
+			glVertexPointer(3, GL_FLOAT, sizeof(PxVec3), &verts.front());
+			glNormalPointer(GL_FLOAT, sizeof(PxVec3), &norms.front());
 
 			glDrawElements(GL_QUADS, quad_count*4, GL_UNSIGNED_INT, quads);
 
@@ -274,12 +273,12 @@ namespace VisualDebugger
 		void Init()
 		{
 			// Setup default render states
-			PxReal specular_material[]	= { .2f, .2f, .2f, 1.f };
+			PxReal specular_material[]	= { .1f, .1f, .1f, 1.f };
 			glEnable(GL_DEPTH_TEST);
 			glEnable(GL_COLOR_MATERIAL);
 			glColorMaterial(GL_FRONT_AND_BACK,GL_AMBIENT_AND_DIFFUSE);
-//			glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 64.f);
-//			glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular_material);
+			glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 1.f);
+			glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular_material);
 
 			// Setup lighting
 			glEnable(GL_LIGHTING);
@@ -411,9 +410,9 @@ namespace VisualDebugger
 
 		///Render PxRenderBuffer
 		///TODO: support text data
-		void Render(const PxRenderBuffer& data)
+		void Render(const PxRenderBuffer& data, PxReal line_width)
 		{
-			glLineWidth(1.f);
+			glLineWidth(line_width);
 
 			//render points
 

@@ -7,100 +7,81 @@
 namespace PhysicsEngine
 {
 	///Plane class
-	class Plane : public Actor
+	class Plane : public StaticActor
 	{
-		PxVec3 normal;
-		PxReal distance;
-
 	public:
 		//A plane with default paramters: XZ plane centred at (0,0,0)
-		Plane(PxVec3 _normal=PxVec3(0.f, 1.f, 0.f), PxReal _distance=0.f) 
-			: Actor(PxTransform(PxIdentity)), normal(_normal), distance(_distance)
+		Plane(PxVec3 normal=PxVec3(0.f, 1.f, 0.f), PxReal distance=0.f) 
+			: StaticActor(PxTransformFromPlaneEquation(PxPlane(normal, distance)))
 		{
-			PxRigidStatic* plane = PxCreatePlane(*GetPhysics(), PxPlane(normal, distance), *GetDefaultMaterial());
-			actor = plane;
+			AddShape(PxPlaneGeometry());
 		}
 	};
 
 	///Sphere class
-	class Sphere : public Actor
+	class Sphere : public DynamicActor
 	{
-		PxReal radius;
-		PxReal density;
-		PxShape* shape;
-
 	public:
-		//a Box with default parameters:
+		//a sphere with default parameters:
 		// - pose in 0,0,0
-		// - dimensions: 1m x 1m x 1m
+		// - dimensions: 1m
 		// - denisty: 1kg/m^3
-		Sphere(PxTransform pose=PxTransform(PxIdentity), PxReal _radius=1.f, PxReal _density=1.f) 
-			: Actor(pose), radius(_radius), density(_density)
+		Sphere(PxTransform pose=PxTransform(PxIdentity), PxReal radius=1.f, PxReal density=1.f) 
+			: DynamicActor(pose)
 		{ 
-			AddRigidShape(PxSphereGeometry(radius), density);
+			AddShape(PxSphereGeometry(radius), density);
 		}
 	};
 
 	///Box class
-	class Box : public Actor
+	class Box : public DynamicActor
 	{
-		PxVec3 dimensions;
-		PxReal density;
-		PxShape* shape;
-
 	public:
 		//a Box with default parameters:
 		// - pose in 0,0,0
 		// - dimensions: 1m x 1m x 1m
 		// - denisty: 1kg/m^3
-		Box(PxTransform pose=PxTransform(PxIdentity), PxVec3 _dimensions=PxVec3(.5f,.5f,.5f), PxReal _density=1.f) 
-			: Actor(pose), dimensions(_dimensions), density(_density)
+		Box(PxTransform pose=PxTransform(PxIdentity), PxVec3 dimensions=PxVec3(.5f,.5f,.5f), PxReal density=1.f) 
+			: DynamicActor(pose)
 		{ 
-			AddRigidShape(PxBoxGeometry(dimensions), density);
+			AddShape(PxBoxGeometry(dimensions), density);
 		}
 	};
 
-	class Capsule : public Actor
+	class Capsule : public DynamicActor
 	{
-		PxVec2 dimensions;
-		PxReal density;
-		PxShape* shape;
 	public:
-		Capsule(PxTransform pose=PxTransform(PxIdentity), PxVec2 _dimensions=PxVec2(1.f,1.f), PxReal _density=1.f) 
-			: Actor(pose), dimensions(_dimensions), density(_density)
+		Capsule(PxTransform pose=PxTransform(PxIdentity), PxVec2 dimensions=PxVec2(1.f,1.f), PxReal density=1.f) 
+			: DynamicActor(pose)
 		{
-			AddRigidShape(PxCapsuleGeometry(dimensions.x, dimensions.y), density);
+			AddShape(PxCapsuleGeometry(dimensions.x, dimensions.y), density);
 		}
 	};
 
 	///The ConvexMesh class
-	class ConvexMesh : public Actor
+	class ConvexMesh : public DynamicActor
 	{
-		PxReal density;
-		const PxVec3* verts;
-		size_t verts_size;
-
 	public:
 		//constructor
-		ConvexMesh(const PxVec3* _verts, size_t _verts_size, PxTransform pose=PxTransform(PxIdentity), PxReal _density=1.f)
-			: Actor(pose), density(_density), verts(_verts), verts_size(_verts_size)
+		ConvexMesh(const std::vector<PxVec3>& verts, PxTransform pose=PxTransform(PxIdentity), PxReal density=1.f)
+			: DynamicActor(pose)
 		{
-			AddRigidShape(PxConvexMeshGeometry(CookMesh()), density);
+			PxConvexMeshDesc mesh_desc;
+			mesh_desc.points.count = verts.size();
+			mesh_desc.points.stride = sizeof(PxVec3);
+			mesh_desc.points.data = &verts.front();
+			mesh_desc.flags = PxConvexFlag::eCOMPUTE_CONVEX;
+			mesh_desc.vertexLimit = 256;
+
+			AddShape(PxConvexMeshGeometry(CookMesh(mesh_desc)), density);
 		}
 
 		//mesh cooking (preparation)
-		PxConvexMesh* CookMesh()
+		PxConvexMesh* CookMesh(const PxConvexMeshDesc& mesh_desc)
 		{
-			PxConvexMeshDesc convexDesc;
-			convexDesc.points.count     = verts_size/sizeof(PxVec3);
-			convexDesc.points.stride    = sizeof(PxVec3);
-			convexDesc.points.data      = verts;
-			convexDesc.flags            = PxConvexFlag::eCOMPUTE_CONVEX;
-			convexDesc.vertexLimit      = 256;
-
 			PxDefaultMemoryOutputStream stream;
 
-			if(!GetCooking()->cookConvexMesh(convexDesc, stream))
+			if(!GetCooking()->cookConvexMesh(mesh_desc, stream))
 				throw new Exception("ConvexMesh::CookMesh, cooking failed.");
 
 			PxDefaultMemoryInputData input(stream.getData(), stream.getSize());
@@ -110,36 +91,30 @@ namespace PhysicsEngine
 	};
 
 	///The TriangleMesh class
-	class TriangleMesh : public Actor
+	class TriangleMesh : public StaticActor
 	{
-		PxReal density;
-		const PxVec3* verts;
-		size_t verts_size;
-		const PxU32* trigs;
-		size_t trigs_size;
-
 	public:
 		//constructor
-		TriangleMesh(const PxVec3* _verts, size_t _verts_size, const PxU32* _trigs, size_t _trigs_size, PxTransform pose=PxTransform(PxIdentity), PxReal _density=1.f)
-			: Actor(pose), density(_density), verts(_verts), verts_size(_verts_size), trigs(_trigs), trigs_size(_trigs_size)
+		TriangleMesh(const std::vector<PxVec3>& verts, const std::vector<PxU32>& trigs, PxTransform pose=PxTransform(PxIdentity))
+			: StaticActor(pose)
 		{
-			AddStaticShape(PxTriangleMeshGeometry(CookMesh()));
+			PxTriangleMeshDesc mesh_desc;
+			mesh_desc.points.count = verts.size();
+			mesh_desc.points.stride = sizeof(PxVec3);
+			mesh_desc.points.data = &verts.front();
+			mesh_desc.triangles.count = trigs.size();
+			mesh_desc.triangles.stride = 3*sizeof(PxU32);
+			mesh_desc.triangles.data = &trigs.front();
+
+			AddShape(PxTriangleMeshGeometry(CookMesh(mesh_desc)));
 		}
 
 		//mesh cooking (preparation)
-		PxTriangleMesh* CookMesh()
+		PxTriangleMesh* CookMesh(const PxTriangleMeshDesc& mesh_desc)
 		{
-			PxTriangleMeshDesc meshDesc;
-			meshDesc.points.count           = verts_size/sizeof(PxVec3);
-			meshDesc.points.stride          = sizeof(PxVec3);
-			meshDesc.points.data            = verts;
-			meshDesc.triangles.count           = trigs_size/sizeof(PxU32);
-			meshDesc.triangles.stride          = 3*sizeof(PxU32);
-			meshDesc.triangles.data            = trigs;
-
 			PxDefaultMemoryOutputStream stream;
 
-			if(!GetCooking()->cookTriangleMesh(meshDesc, stream))
+			if(!GetCooking()->cookTriangleMesh(mesh_desc, stream))
 				throw new Exception("TriangleMesh::CookMesh, cooking failed.");
 
 			PxDefaultMemoryInputData input(stream.getData(), stream.getSize());
@@ -149,15 +124,12 @@ namespace PhysicsEngine
 	};
 
 	///The HeightField class
-	class HeightField : public Actor
+	class HeightField : public StaticActor
 	{
-		PxReal density;
-
 	public:
 		//constructor
-		HeightField(PxTransform pose=PxTransform(PxIdentity), PxReal _density=1.f,
-			const PxVec3& _color=PxVec3(.9f,0.f,0.f))
-			: Actor(pose), density(_density)
+		HeightField(PxTransform pose=PxTransform(PxIdentity))
+			: StaticActor(pose)
 		{
 			PxU32 numRows = 4;
 			PxU32 numCols = 4;
@@ -174,7 +146,7 @@ namespace PhysicsEngine
 			hfDesc.samples.data       = samples;
 			hfDesc.samples.stride     = sizeof(PxHeightFieldSample);
 
-			AddStaticShape(PxHeightFieldGeometry(GetPhysics()->createHeightField(hfDesc),PxMeshGeometryFlags(),1.f,1.f,1.f));
+			AddShape(PxHeightFieldGeometry(GetPhysics()->createHeightField(hfDesc),PxMeshGeometryFlags(),1.f,1.f,1.f));
 		}
 	};
 

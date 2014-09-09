@@ -8,25 +8,17 @@ namespace PhysicsEngine
 {
 	using namespace std;
 
-	class Box2 : public Actor
+	class Box2 : public DynamicActor
 	{
-		PxReal density;
-		const PxMaterial* material;
-
 	public:
-		Box2(PxTransform pose=PxTransform(PxIdentity), PxReal _density=1.f,	const PxVec3& _color=PxVec3(.9f,0.f,0.f), const PxMaterial* _material=GetDefaultMaterial())
-			: Actor(pose), density(_density), material(_material)
+		Box2(PxTransform pose=PxTransform(PxIdentity), PxReal density=1.f)
+			: DynamicActor(pose)
 		{
-		}
-
-		virtual void Create()
-		{
-			PxRigidDynamic* box = GetPhysics()->createRigidDynamic(pose);
-			PxShape* shape1 = box->createShape(PxBoxGeometry(PxVec3(1.5f,1.5f,1.5f)), *material);
-			PxShape* shape2 = box->createShape(PxBoxGeometry(PxVec3(1.5f,1.5f,1.5f)), *material);
-			shape2->setLocalPose(PxTransform(PxVec3(2.f,.0f,.0f)));
-			PxRigidBodyExt::setMassAndUpdateInertia(*box, density);
-			actor = box;
+			AddShape(PxBoxGeometry(.5f,.5f,.5f), density);
+			AddShape(PxBoxGeometry(.5f,.5f,.5f), density);
+			GetShape(1)->setLocalPose(PxTransform(PxVec3(2.f,0.f,0.f)));
+			Color(PxVec3(.9f,.9f,.0f),0);
+			Color(PxVec3(.9f,.0f,.9f),1);
 		}
 	};
 
@@ -135,6 +127,24 @@ namespace PhysicsEngine
 	static const PxVec3 pyramid_verts[] = {PxVec3(0,1,0), PxVec3(1,0,0), PxVec3(-1,0,0), PxVec3(0,0,1), PxVec3(0,0,-1)};
 	static const PxU32 pyramid_trigs[] = {1, 4, 0, 3, 1, 0, 2, 3, 0, 4, 2, 0, 3, 2, 1, 2, 4, 1};//vertices have to be specified in a counter-clockwise order to assure the right rendering results
 
+	class Pyramid : public ConvexMesh
+	{
+	public:
+		Pyramid(PxTransform pose=PxTransform(PxIdentity), PxReal density=1.f) :
+			ConvexMesh(vector<PxVec3>(begin(pyramid_verts),end(pyramid_verts)), pose, density)
+		{
+		}
+	};
+
+	class PyramidTriangle : public TriangleMesh
+	{
+	public:
+		PyramidTriangle(PxTransform pose=PxTransform(PxIdentity)) :
+			TriangleMesh(vector<PxVec3>(begin(pyramid_verts),end(pyramid_verts)), vector<PxU32>(begin(pyramid_trigs),end(pyramid_trigs)), pose)
+		{
+		}
+	};
+
 	///Custom scene class
 	class MyScene : public Scene
 	{
@@ -142,8 +152,8 @@ namespace PhysicsEngine
 		Box* box;
 		Capsule* capsule;
 		Cloth* cloth;
-		ConvexMesh* pyramid;
-		TriangleMesh* pyramid_2;
+		Pyramid* pyramid;
+		PyramidTriangle* pyramid_2;
 		Sphere* sphere;
 		HeightField* hf;
 		MySimulationEventCallback* my_callback;
@@ -185,11 +195,11 @@ namespace PhysicsEngine
 			box->Color(PxVec3(.9f,0.f,0.f));
 			Add(box);
 
-			pyramid = new ConvexMesh(pyramid_verts, sizeof(pyramid_verts), PxTransform(PxVec3(-5.0f,5.f,5.0f)));
+			pyramid = new Pyramid(PxTransform(PxVec3(-5.0f,5.f,5.0f)));
 			pyramid->Color(PxVec3(0.f,.0f,0.9f));
 			Add(pyramid);
 
-			pyramid_2 = new TriangleMesh(pyramid_verts, sizeof(pyramid_verts), pyramid_trigs, sizeof(pyramid_trigs), PxTransform(PxVec3(-3.0f,0.f,5.0f)));
+			pyramid_2 = new PyramidTriangle(PxTransform(PxVec3(-3.0f,0.f,5.0f)));
 			pyramid_2->Color(PxVec3(0.f,.9f,0.f));
 			Add(pyramid_2);
 
@@ -204,6 +214,7 @@ namespace PhysicsEngine
 			capsule->Color(PxVec3(.9f,0.f,.9f));
 			Add(capsule);
 
+			Add(Box2(PxTransform(PxVec3(2.0f,2.f,2.0f))));
 			//setting custom cloth parameters
 			//cloth->Get()->setStretchConfig(PxClothFabricPhaseType::eBENDING, PxClothStretchConfig(1.f));
 		}

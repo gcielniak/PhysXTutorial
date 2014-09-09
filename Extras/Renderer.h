@@ -24,7 +24,7 @@ namespace VisualDebugger
 		void Render(PxActor** actors, const PxU32 numActors);
 
 		///Render debug information
-		void Render(const PxRenderBuffer& data);
+		void Render(const PxRenderBuffer& data, PxReal line_width=1.f);
 
 		///Render text
 		void RenderText(const std::string& text, const physx::PxVec2& location, 

@@ -82,17 +82,6 @@ namespace PhysicsEngine
 		return physics->createMaterial(sf, df, cr); 
 	}
 
-	///Actor methods
-	Actor::Actor(const PxTransform& _pose)
-		: pose(_pose), actor(0)
-	{
-	}
-
-	PxActor* Actor::Get()
-	{
-		return actor;
-	}
-
 	///Scene methods
 	void Scene::Init()
 	{

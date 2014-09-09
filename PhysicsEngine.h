@@ -10,7 +10,7 @@ namespace PhysicsEngine
 
 	///Initialise PhysX framework
 	void PxInit();
-	
+
 	///Release PhysX resources
 	void PxRelease();
 
@@ -39,13 +39,24 @@ namespace PhysicsEngine
 
 	public:
 		///Constructor
-		Actor(const PxTransform& pose);
+		Actor(const PxTransform& _pose)
+			: pose(_pose), actor(0)
+		{
+		}
+
+		PxActor* Actor::Get()
+		{
+			return actor;
+		}
 
 		void Color(PxVec3 new_color, PxU32 shape_indx=0)
 		{
 			PxShape* shape = GetShape(shape_indx);
 			if (shape)
+			{
 				colors[shape_indx] = new_color;
+				shape->userData = &colors[shape_indx];
+			}
 		}
 
 		const PxVec3* Color(PxU32 shape_indx=0)
@@ -55,7 +66,7 @@ namespace PhysicsEngine
 			else 
 				return 0;			
 		}
-		
+
 		PxShape* GetShape(PxU32 shape_indx=0)
 		{
 			if (actor->isRigidActor())
@@ -68,7 +79,18 @@ namespace PhysicsEngine
 			return 0;
 		}
 
-		void AddRigidShape(const PxGeometry& geometry, PxReal density)
+		virtual void AddShape(const PxGeometry& geometry, PxReal density) {}
+	};
+
+	class DynamicActor : public Actor
+	{
+	public:
+		DynamicActor(const PxTransform& pose) :
+			Actor(pose)
+		{
+		}
+
+		void AddShape(const PxGeometry& geometry, PxReal density)
 		{
 			if (!actor)
 				actor = (PxActor*)GetPhysics()->createRigidDynamic(pose);
@@ -77,8 +99,17 @@ namespace PhysicsEngine
 			colors.push_back(default_color);
 			shape->userData = &colors.back();
 		}
+	};
 
-		void AddStaticShape(const PxGeometry& geometry)
+	class StaticActor : public Actor
+	{
+	public:
+		StaticActor(const PxTransform& pose) :
+			Actor(pose)
+		{
+		}
+
+		void AddShape(const PxGeometry& geometry, PxReal density=0.f)
 		{
 			if (!actor)
 				actor = (PxActor*)GetPhysics()->createRigidStatic(pose);
@@ -86,8 +117,6 @@ namespace PhysicsEngine
 			colors.push_back(default_color);
 			shape->userData = &colors.back();
 		}
-
-		PxActor* Get();
 	};
 
 	///Generic scene class
@@ -122,7 +151,7 @@ namespace PhysicsEngine
 
 		///Add actors
 		void Add(Actor& actor);
-		
+
 		void Add(Actor* actor) { Add(*actor); };
 
 		///Get the PxScene object
