@@ -1,21 +1,17 @@
 #include "Renderer.h"
 #include <iostream>
 #include <vector>
+#include "..\UserData.h"
+
 using namespace std;
 
 namespace VisualDebugger
 {
 	namespace Renderer
 	{
-
-		const int MAX_NUM_CONVEXMESH_TRIANGLES = 1024;
-		const int MAX_NUM_ACTOR_SHAPES = 128;
-		PxVec3 default_color = PxVec3(0.7f, 0.7f, 0.7f);
-
+		PxVec3 default_color = PxVec3(0.8f, 0.8f, 0.8f);
 		int render_detail = 10;
 		bool show_shadows = true;
-
-		static PxU32 trigs[3*MAX_NUM_CONVEXMESH_TRIANGLES];
 
 		static float gPlaneData[]={
 			-1.f, 0.f, -1.f, 0.f, 1.f, 0.f, -1.f, 0.f, 1.f, 0.f, 1.f, 0.f,
@@ -128,30 +124,6 @@ namespace VisualDebugger
 		void DrawHeightField(const PxGeometryHolder& geometry)
 		{
 			//TODO
-			PxHeightFieldGeometry hf_geometry = geometry.heightField();
-			const PxReal    rs = hf_geometry.rowScale;
-			const PxReal    hs = hf_geometry.heightScale;
-			const PxReal    cs = hf_geometry.columnScale;
-			PxHeightField* hf = hf_geometry.heightField;
-
-			const PxU32     nbCols = hf->getNbColumns();
-			const PxU32     nbRows = hf->getNbRows();
-
-			const PxU32 nbVerts = nbRows * nbCols;
-			PxHeightFieldSample* sampleBuffer = new PxHeightFieldSample[nbVerts];
-			hf->saveCells(sampleBuffer, nbVerts * sizeof(PxHeightFieldSample));
-
-			PxVec3* vertices = new PxVec3[nbVerts];
-			for(PxU32 i = 0; i < nbRows; i++)
-			{
-				for(PxU32 j = 0; j < nbCols; j++)
-				{
-					vertices[i * nbCols + j] = PxVec3(PxReal(i) * rs, PxReal(sampleBuffer[j + (i*nbCols)].height) * hs, PxReal(j) * cs);
-				}
-			}
-
-			delete sampleBuffer;
-			delete vertices;
 		}
 
 		void RenderGeometry(const PxGeometryHolder& geometry)
@@ -186,7 +158,8 @@ namespace VisualDebugger
 
 		void RenderCloth(const PxCloth* cloth)
 		{
-			PxClothMeshDesc* mesh_desc = (PxClothMeshDesc*)cloth->userData;
+			PxClothMeshDesc* mesh_desc = ((UserData*)cloth->userData)->cloth_mesh_desc;
+			PxVec3* color = ((UserData*)cloth->userData)->color;
 
 			PxU32 quad_count = mesh_desc->quads.count;
 			PxU32* quads = (PxU32*)mesh_desc->quads.data;
@@ -224,6 +197,8 @@ namespace VisualDebugger
 
 			PxTransform pose = cloth->getGlobalPose();
 			PxMat44 shapePose(pose);
+
+			glColor4f(color->x, color->y, color->z, 1.f);
 
 			glPushMatrix();						
 			glMultMatrixf((float*)&shapePose);
@@ -341,7 +316,7 @@ namespace VisualDebugger
 
 						if (shape->userData)
 						{
-							shape_color = *((PxVec3*)shape->userData);
+							shape_color = *(((UserData*)shape->userData)->color);
 							if (h.getType() == PxGeometryType::ePLANE)
 							{
 								shadow_color = shape_color*0.9;
@@ -407,7 +382,6 @@ namespace VisualDebugger
 			glDisableClientState(GL_VERTEX_ARRAY);
 		}
 
-
 		///Render PxRenderBuffer
 		///TODO: support text data
 		void Render(const PxRenderBuffer& data, PxReal line_width)
@@ -419,8 +393,8 @@ namespace VisualDebugger
 			unsigned int NbPoints = data.getNbPoints();
 			if(NbPoints)
 			{
-				float* pVertList = new float[NbPoints*3];
-				float* pColorList = new float[NbPoints*4];
+				std::vector<float> pVertList(NbPoints*3);
+				std::vector<float> pColorList(NbPoints*4);
 				int vertIndex = 0;
 				int colorIndex = 0;
 				const physx::PxDebugPoint* Points = data.getPoints();
@@ -436,10 +410,7 @@ namespace VisualDebugger
 					Points++;
 				}
 
-				RenderBuffer(pVertList, pColorList, GL_POINTS, data.getNbPoints());
-
-				delete[] pVertList;
-				delete[] pColorList;
+				RenderBuffer(&pVertList.front(), &pColorList.front(), GL_POINTS, data.getNbPoints());
 			}
 
 			//render lines
@@ -447,8 +418,8 @@ namespace VisualDebugger
 			unsigned int NbLines = data.getNbLines();
 			if(NbLines)
 			{
-				float* pVertList = new float[NbLines*3*2];
-				float* pColorList = new float[NbLines*4*2];
+				std::vector<float> pVertList(NbLines*3*2);
+				std::vector<float> pColorList(NbLines*4*2);
 				int vertIndex = 0;
 				int colorIndex = 0;
 				const PxDebugLine* Lines = data.getLines();
@@ -473,10 +444,7 @@ namespace VisualDebugger
 					Lines++;
 				}
 
-				RenderBuffer(pVertList, pColorList, GL_LINES, data.getNbLines()*2);
-
-				delete[] pVertList;
-				delete[] pColorList;
+				RenderBuffer(&pVertList.front(), &pColorList.front(), GL_LINES, data.getNbLines()*2);
 			}
 
 			//render triangles
@@ -484,8 +452,8 @@ namespace VisualDebugger
 			unsigned int NbTris = data.getNbTriangles();
 			if(NbTris)
 			{
-				float* pVertList = new float[NbTris*3*3];
-				float* pColorList = new float[NbTris*4*3];
+				std::vector<float> pVertList(NbTris*3*3);
+				std::vector<float> pColorList(NbTris*4*3);
 				int vertIndex = 0;
 				int colorIndex = 0;
 				const PxDebugTriangle* Triangles = data.getTriangles();
@@ -521,10 +489,7 @@ namespace VisualDebugger
 					Triangles++;
 				}
 
-				RenderBuffer(pVertList, pColorList, GL_TRIANGLES, data.getNbTriangles()*3);
-
-				delete[] pVertList;
-				delete[] pColorList;
+				RenderBuffer(&pVertList.front(), &pColorList.front(), GL_TRIANGLES, data.getNbTriangles()*3);
 			}
 
 			//TODO: render texts ?

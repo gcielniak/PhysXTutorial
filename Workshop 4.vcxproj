@@ -105,6 +105,7 @@
     <ClInclude Include="Exception.h" />
     <ClInclude Include="MyPhysicsEngine.h" />
     <ClInclude Include="PhysicsEngine.h" />
+    <ClInclude Include="UserData.h" />
     <ClInclude Include="VisualDebugger.h" />
     <ClInclude Include="Extras\Camera.h" />
     <ClInclude Include="Extras\GLFontData.h" />

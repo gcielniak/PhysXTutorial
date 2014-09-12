@@ -190,6 +190,7 @@ namespace PhysicsEngine
 			Add(plane);
 
 			cloth = new Cloth(PxTransform(PxVec3(-4.f,9.f,0.f)), PxVec2(8.f,8.f), 40, 40);
+			cloth->Color(PxVec3(.5f,.5f,.9f));
 			Add(*cloth);
 
 			box = new Box(PxTransform(PxVec3(.0f,5.f,.0f)),PxVec3(1.f,.5f,.5f));

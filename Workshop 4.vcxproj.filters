@@ -19,6 +19,7 @@
     <ClInclude Include="Extras\HUD.h" />
     <ClInclude Include="Extras\Renderer.h" />
     <ClInclude Include="BasicActors.h" />
+    <ClInclude Include="UserData.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram.cd" />

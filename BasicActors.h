@@ -134,16 +134,16 @@ namespace PhysicsEngine
 			PxU32 numRows = 4;
 			PxU32 numCols = 4;
 
-			PxHeightFieldSample* samples = new PxHeightFieldSample[numRows*numCols];
+			std::vector<PxHeightFieldSample> samples(numRows*numCols);
 
-			for (PxU32 i = 0; i < numRows*numCols; i++)
+			for (PxU32 i = 0; i < samples.size(); i++)
 				samples[i].height = 0;
 
 			PxHeightFieldDesc hfDesc;
 			hfDesc.format             = PxHeightFieldFormat::eS16_TM;
 			hfDesc.nbColumns          = numCols;
 			hfDesc.nbRows             = numRows;
-			hfDesc.samples.data       = samples;
+			hfDesc.samples.data       = &samples.front();
 			hfDesc.samples.stride     = sizeof(PxHeightFieldSample);
 
 			AddShape(PxHeightFieldGeometry(GetPhysics()->createHeightField(hfDesc),PxMeshGeometryFlags(),1.f,1.f,1.f));
@@ -152,9 +152,9 @@ namespace PhysicsEngine
 
 	class Cloth : public Actor
 	{
-	public:
-		PxClothMeshDesc meshDesc;
+		PxClothMeshDesc mesh_desc;
 
+	public:
 		//constructor
 		Cloth(PxTransform pose=PxTransform(PxIdentity), const PxVec2& size=PxVec2(1.f,1.f), PxU32 width=1, PxU32 height=1, bool fix_top = true)
 		{
@@ -163,7 +163,7 @@ namespace PhysicsEngine
 			PxReal h_step = size.y/height;
 
 			PxClothParticle* vertices = new PxClothParticle[(width+1)*(height+1)*4];
-			PxU32* primitives = new PxU32[width*height*4];
+			PxU32* quads = new PxU32[width*height*4];
 
 			for (PxU32 j = 0; j < (height+1); j++)
 			{
@@ -182,29 +182,29 @@ namespace PhysicsEngine
 					for (PxU32 i = 0; i < width; i++)
 					{
 						PxU32 offset = (i + j*width)*4;
-						primitives[offset + 0] = (i+0) + (j+0)*(width+1);
-						primitives[offset + 1] = (i+1) + (j+0)*(width+1);
-						primitives[offset + 2] = (i+1) + (j+1)*(width+1);
-						primitives[offset + 3] = (i+0) + (j+1)*(width+1);
+						quads[offset + 0] = (i+0) + (j+0)*(width+1);
+						quads[offset + 1] = (i+1) + (j+0)*(width+1);
+						quads[offset + 2] = (i+1) + (j+1)*(width+1);
+						quads[offset + 3] = (i+0) + (j+1)*(width+1);
 					}
 				}
 			}
 
 			//init cloth mesh description
-			meshDesc.points.data = vertices;
-			meshDesc.points.count = (width+1)*(height+1);
-			meshDesc.points.stride = sizeof(PxClothParticle);
+			mesh_desc.points.data = vertices;
+			mesh_desc.points.count = (width+1)*(height+1);
+			mesh_desc.points.stride = sizeof(PxClothParticle);
 
-			meshDesc.invMasses.data = &vertices->invWeight;
-			meshDesc.invMasses.count = (width+1)*(height+1);
-			meshDesc.invMasses.stride = sizeof(PxClothParticle);
+			mesh_desc.invMasses.data = &vertices->invWeight;
+			mesh_desc.invMasses.count = (width+1)*(height+1);
+			mesh_desc.invMasses.stride = sizeof(PxClothParticle);
 
-			meshDesc.quads.data = primitives;
-			meshDesc.quads.count = width*height;
-			meshDesc.quads.stride = sizeof(PxU32) * 4;
+			mesh_desc.quads.data = quads;
+			mesh_desc.quads.count = width*height;
+			mesh_desc.quads.stride = sizeof(PxU32) * 4;
 
 			//create cloth fabric (cooking)
-			PxClothFabric* fabric = PxClothFabricCreate(*GetPhysics(), meshDesc, PxVec3(0, -1, 0));
+			PxClothFabric* fabric = PxClothFabricCreate(*GetPhysics(), mesh_desc, PxVec3(0, -1, 0));
 
 			//create cloth
 			PxCloth* cloth = GetPhysics()->createCloth(pose, *fabric, vertices, PxClothFlags());
@@ -212,7 +212,13 @@ namespace PhysicsEngine
 			cloth->setClothFlag(PxClothFlag::eSCENE_COLLISION, true);
 
 			actor = cloth;
-			actor->userData = &meshDesc;
+			colors.push_back(default_color);
+			actor->userData = new UserData(&colors.back(), &mesh_desc);
+		}
+
+		~Cloth()
+		{
+			delete (UserData*)actor->userData;		
 		}
 	};
 }

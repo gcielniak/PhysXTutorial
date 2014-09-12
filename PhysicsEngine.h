@@ -3,6 +3,7 @@
 #include <vector>
 #include "PxPhysicsAPI.h"
 #include "Exception.h"
+#include "UserData.h"
 
 namespace PhysicsEngine
 {
@@ -50,11 +51,9 @@ namespace PhysicsEngine
 
 		void Color(PxVec3 new_color, PxU32 shape_indx=0)
 		{
-			PxShape* shape = GetShape(shape_indx);
-			if (shape)
+			if (shape_indx < colors.size())
 			{
 				colors[shape_indx] = new_color;
-				shape->userData = &colors[shape_indx];
 			}
 		}
 
@@ -89,12 +88,20 @@ namespace PhysicsEngine
 			actor = (PxActor*)GetPhysics()->createRigidDynamic(pose);
 		}
 
+		~DynamicActor()
+		{
+			for (unsigned int i = 0; i < colors.size(); i++)
+				delete (UserData*)GetShape(i)->userData;
+		}
+
 		void AddShape(const PxGeometry& geometry, PxReal density)
 		{
 			PxShape* shape = ((PxRigidDynamic*)actor)->createShape(geometry,*GetDefaultMaterial());
 			PxRigidBodyExt::setMassAndUpdateInertia(*(PxRigidDynamic*)actor, density);
 			colors.push_back(default_color);
-			shape->userData = &colors.back();
+			shape->userData = new UserData();
+			for (unsigned int i = 0; i < colors.size(); i++)
+				((UserData*)GetShape(i)->userData)->color = &colors[i];
 		}
 	};
 
@@ -106,11 +113,19 @@ namespace PhysicsEngine
 			actor = (PxActor*)GetPhysics()->createRigidStatic(pose);
 		}
 
+		~StaticActor()
+		{
+			for (unsigned int i = 0; i < colors.size(); i++)
+				delete (UserData*)GetShape(i)->userData;
+		}
+
 		void AddShape(const PxGeometry& geometry, PxReal density=0.f)
 		{
 			PxShape* shape = ((PxRigidStatic*)actor)->createShape(geometry,*GetDefaultMaterial());
 			colors.push_back(default_color);
-			shape->userData = &colors.back();
+			shape->userData = new UserData();
+			for (unsigned int i = 0; i < colors.size(); i++)
+				((UserData*)GetShape(i)->userData)->color = &colors[i];
 		}
 	};
 
