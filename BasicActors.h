@@ -152,16 +152,11 @@ namespace PhysicsEngine
 
 	class Cloth : public Actor
 	{
-		PxVec2 size;
-		PxU32 width, height;
-		bool fix_top;
-
 	public:
 		PxClothMeshDesc meshDesc;
 
 		//constructor
-		Cloth(PxTransform pose=PxTransform(PxIdentity), const PxVec2& _size=PxVec2(1.f,1.f), PxU32 _width=1, PxU32 _height=1, bool _fix_top = true)
-			: Actor(pose), size(_size), width(_width), height(_height), fix_top(_fix_top)
+		Cloth(PxTransform pose=PxTransform(PxIdentity), const PxVec2& size=PxVec2(1.f,1.f), PxU32 width=1, PxU32 height=1, bool fix_top = true)
 		{
 			//prepare vertices
 			PxReal w_step = size.x/width;

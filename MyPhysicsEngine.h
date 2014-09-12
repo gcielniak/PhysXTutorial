@@ -157,6 +157,7 @@ namespace PhysicsEngine
 		Sphere* sphere;
 		HeightField* hf;
 		MySimulationEventCallback* my_callback;
+		Box2* box2;
 
 	public:
 		///A custom scene class
@@ -214,7 +215,7 @@ namespace PhysicsEngine
 			capsule->Color(PxVec3(.9f,0.f,.9f));
 			Add(capsule);
 
-			Add(Box2(PxTransform(PxVec3(2.0f,2.f,2.0f))));
+			Add(new Box2(PxTransform(PxVec3(2.0f,2.f,2.0f))));
 			//setting custom cloth parameters
 			//cloth->Get()->setStretchConfig(PxClothFabricPhaseType::eBENDING, PxClothStretchConfig(1.f));
 		}

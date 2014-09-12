@@ -33,14 +33,13 @@ namespace PhysicsEngine
 	class Actor
 	{
 	protected:
-		PxTransform pose;
 		PxActor* actor;
 		std::vector<PxVec3> colors;
 
 	public:
 		///Constructor
-		Actor(const PxTransform& _pose)
-			: pose(_pose), actor(0)
+		Actor()
+			: actor(0)
 		{
 		}
 
@@ -85,15 +84,13 @@ namespace PhysicsEngine
 	class DynamicActor : public Actor
 	{
 	public:
-		DynamicActor(const PxTransform& pose) :
-			Actor(pose)
+		DynamicActor(const PxTransform& pose) : Actor()
 		{
+			actor = (PxActor*)GetPhysics()->createRigidDynamic(pose);
 		}
 
 		void AddShape(const PxGeometry& geometry, PxReal density)
 		{
-			if (!actor)
-				actor = (PxActor*)GetPhysics()->createRigidDynamic(pose);
 			PxShape* shape = ((PxRigidDynamic*)actor)->createShape(geometry,*GetDefaultMaterial());
 			PxRigidBodyExt::setMassAndUpdateInertia(*(PxRigidDynamic*)actor, density);
 			colors.push_back(default_color);
@@ -104,15 +101,13 @@ namespace PhysicsEngine
 	class StaticActor : public Actor
 	{
 	public:
-		StaticActor(const PxTransform& pose) :
-			Actor(pose)
+		StaticActor(const PxTransform& pose)
 		{
+			actor = (PxActor*)GetPhysics()->createRigidStatic(pose);
 		}
 
 		void AddShape(const PxGeometry& geometry, PxReal density=0.f)
 		{
-			if (!actor)
-				actor = (PxActor*)GetPhysics()->createRigidStatic(pose);
 			PxShape* shape = ((PxRigidStatic*)actor)->createShape(geometry,*GetDefaultMaterial());
 			colors.push_back(default_color);
 			shape->userData = &colors.back();
@@ -130,7 +125,7 @@ namespace PhysicsEngine
 		//selected dynamic actor on the scene
 		PxRigidDynamic* selected_actor;
 		//original and modified colour of the selected actor
-		PxVec3 sactor_color, sactor_color_orig;
+		std::vector<PxVec3> sactor_color_orig;
 
 		void HighlightOn(PxRigidDynamic* actor);
 

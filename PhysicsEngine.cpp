@@ -196,10 +196,13 @@ namespace PhysicsEngine
 		//store the original colour and adjust brightness of the selected actor
 		std::vector<PxShape*> shapes(actor->getNbShapes());
 		actor->getShapes((PxShape**)&shapes.front(),shapes.size());
-		if (shapes[0]->userData)
+
+		sactor_color_orig.clear();
+
+		for (unsigned int i = 0; i < shapes.size(); i++)
 		{
-			sactor_color_orig = *((PxVec3*)shapes[0]->userData);
-			*((PxVec3*)shapes[0]->userData) += PxVec3(.2f,.2f,.2f);
+			sactor_color_orig.push_back(*((PxVec3*)shapes[i]->userData));
+			*((PxVec3*)shapes[i]->userData) += PxVec3(.2f,.2f,.2f);
 		}
 	}
 
@@ -208,7 +211,10 @@ namespace PhysicsEngine
 		//restore the original color
 		std::vector<PxShape*> shapes(actor->getNbShapes());
 		actor->getShapes((PxShape**)&shapes.front(),shapes.size());
-		if (shapes[0]->userData)
-			*((PxVec3*)shapes[0]->userData) = sactor_color_orig;
+
+		for (unsigned int i = 0; i < shapes.size(); i++)
+		{
+			*((PxVec3*)shapes[i]->userData) = sactor_color_orig[i];
+		}
 	}
 }
