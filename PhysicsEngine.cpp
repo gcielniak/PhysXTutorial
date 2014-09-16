@@ -14,7 +14,6 @@ namespace PhysicsEngine
 	debugger::comm::PvdConnection* vd_connection = 0;
 	PxPhysics* physics = 0;
 	PxCooking* cooking = 0;
-	PxMaterial* default_material = 0;
 
 	///PhysX functions
 	void PxInit()
@@ -44,14 +43,12 @@ namespace PhysicsEngine
 			vd_connection = PxVisualDebuggerExt::createConnection(physics->getPvdConnectionManager(), 
 			"localhost", 5425, 100, PxVisualDebuggerExt::getAllConnectionFlags());
 
-		if (!default_material)
-			default_material = physics->createMaterial(0.0f, 0.0f, 0.0f);
+		//create a deafult material
+		CreateMaterial();
 	}
 
 	void PxRelease()
 	{
-		if (default_material)
-			default_material->release();
 		if (vd_connection)
 			vd_connection->release();
 		if (cooking)
@@ -72,14 +69,18 @@ namespace PhysicsEngine
 		return cooking;
 	}
 
-	PxMaterial* GetDefaultMaterial() 
-	{ 
-		return default_material; 
+	PxMaterial* GetMaterial(PxU32 index)
+	{
+		std::vector<PxMaterial*> materials(physics->getNbMaterials());
+		if (index < physics->getMaterials((PxMaterial**)&materials.front(),materials.size()))
+			return materials[index];
+		else
+			return 0;
 	}
 
 	PxMaterial* CreateMaterial(PxReal sf, PxReal df, PxReal cr) 
 	{
-		return physics->createMaterial(sf, df, cr); 
+		return physics->createMaterial(sf, df, cr);
 	}
 
 	///Scene methods

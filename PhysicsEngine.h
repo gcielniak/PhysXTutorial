@@ -21,11 +21,11 @@ namespace PhysicsEngine
 	///Get the cooking object
 	PxCooking* GetCooking();
 
-	///Get default material
-	PxMaterial* GetDefaultMaterial();
+	///Get the specified material
+	PxMaterial* GetMaterial(PxU32 index=0);
 
-	///Create a material
-	PxMaterial* CreateMaterial(PxReal sf=0.f, PxReal df=0.f, PxReal cr=0.f);
+	///Create a new material
+	PxMaterial* CreateMaterial(PxReal sf=.0f, PxReal df=.0f, PxReal cr=.0f);
 
 	static const PxVec3 default_color(.8f,.8f,.8f);
 
@@ -65,13 +65,13 @@ namespace PhysicsEngine
 				return 0;			
 		}
 
-		PxShape* GetShape(PxU32 shape_indx=0)
+		PxShape* GetShape(PxU32 index=0)
 		{
 			if (actor->isRigidActor())
 			{
 				std::vector<PxShape*> shapes(((PxRigidActor*)actor)->getNbShapes());
-				if (shape_indx < ((PxRigidActor*)actor)->getShapes((PxShape**)&shapes.front(),shapes.size()))
-					return shapes[shape_indx];
+				if (index < ((PxRigidActor*)actor)->getShapes((PxShape**)&shapes.front(),shapes.size()))
+					return shapes[index];
 			}
 
 			return 0;
@@ -96,7 +96,7 @@ namespace PhysicsEngine
 
 		void AddShape(const PxGeometry& geometry, PxReal density)
 		{
-			PxShape* shape = ((PxRigidDynamic*)actor)->createShape(geometry,*GetDefaultMaterial());
+			PxShape* shape = ((PxRigidDynamic*)actor)->createShape(geometry,*GetMaterial());
 			PxRigidBodyExt::setMassAndUpdateInertia(*(PxRigidDynamic*)actor, density);
 			colors.push_back(default_color);
 			shape->userData = new UserData();
@@ -121,7 +121,7 @@ namespace PhysicsEngine
 
 		void AddShape(const PxGeometry& geometry, PxReal density=0.f)
 		{
-			PxShape* shape = ((PxRigidStatic*)actor)->createShape(geometry,*GetDefaultMaterial());
+			PxShape* shape = ((PxRigidStatic*)actor)->createShape(geometry,*GetMaterial());
 			colors.push_back(default_color);
 			shape->userData = new UserData();
 			for (unsigned int i = 0; i < colors.size(); i++)

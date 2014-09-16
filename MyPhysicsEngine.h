@@ -180,7 +180,7 @@ namespace PhysicsEngine
 		{
 			SetVisualisation();			
 
-			GetDefaultMaterial()->setDynamicFriction(.2f);
+			GetMaterial()->setDynamicFriction(.2f);
 
 			///Initialise and set the customised event callback
 			my_callback = new MySimulationEventCallback();
