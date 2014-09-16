@@ -14,8 +14,8 @@ namespace PhysicsEngine
 		Box2(PxTransform pose=PxTransform(PxIdentity), PxReal density=1.f)
 			: DynamicActor(pose)
 		{
-			AddShape(PxBoxGeometry(.5f,.5f,.5f), density);
-			AddShape(PxBoxGeometry(.5f,.5f,.5f), density);
+			CreateShape(PxBoxGeometry(.5f,.5f,.5f), density);
+			CreateShape(PxBoxGeometry(.5f,.5f,.5f), density);
 			GetShape(1)->setLocalPose(PxTransform(PxVec3(2.f,0.f,0.f)));
 			Color(PxVec3(.9f,.9f,.0f),0);
 			Color(PxVec3(.9f,.0f,.9f),1);

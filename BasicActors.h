@@ -14,7 +14,7 @@ namespace PhysicsEngine
 		Plane(PxVec3 normal=PxVec3(0.f, 1.f, 0.f), PxReal distance=0.f) 
 			: StaticActor(PxTransformFromPlaneEquation(PxPlane(normal, distance)))
 		{
-			AddShape(PxPlaneGeometry());
+			CreateShape(PxPlaneGeometry());
 		}
 	};
 
@@ -29,7 +29,7 @@ namespace PhysicsEngine
 		Sphere(PxTransform pose=PxTransform(PxIdentity), PxReal radius=1.f, PxReal density=1.f) 
 			: DynamicActor(pose)
 		{ 
-			AddShape(PxSphereGeometry(radius), density);
+			CreateShape(PxSphereGeometry(radius), density);
 		}
 	};
 
@@ -44,7 +44,7 @@ namespace PhysicsEngine
 		Box(PxTransform pose=PxTransform(PxIdentity), PxVec3 dimensions=PxVec3(.5f,.5f,.5f), PxReal density=1.f) 
 			: DynamicActor(pose)
 		{ 
-			AddShape(PxBoxGeometry(dimensions), density);
+			CreateShape(PxBoxGeometry(dimensions), density);
 		}
 	};
 
@@ -54,7 +54,7 @@ namespace PhysicsEngine
 		Capsule(PxTransform pose=PxTransform(PxIdentity), PxVec2 dimensions=PxVec2(1.f,1.f), PxReal density=1.f) 
 			: DynamicActor(pose)
 		{
-			AddShape(PxCapsuleGeometry(dimensions.x, dimensions.y), density);
+			CreateShape(PxCapsuleGeometry(dimensions.x, dimensions.y), density);
 		}
 	};
 
@@ -73,7 +73,7 @@ namespace PhysicsEngine
 			mesh_desc.flags = PxConvexFlag::eCOMPUTE_CONVEX;
 			mesh_desc.vertexLimit = 256;
 
-			AddShape(PxConvexMeshGeometry(CookMesh(mesh_desc)), density);
+			CreateShape(PxConvexMeshGeometry(CookMesh(mesh_desc)), density);
 		}
 
 		//mesh cooking (preparation)
@@ -106,7 +106,7 @@ namespace PhysicsEngine
 			mesh_desc.triangles.stride = 3*sizeof(PxU32);
 			mesh_desc.triangles.data = &trigs.front();
 
-			AddShape(PxTriangleMeshGeometry(CookMesh(mesh_desc)));
+			CreateShape(PxTriangleMeshGeometry(CookMesh(mesh_desc)));
 		}
 
 		//mesh cooking (preparation)
@@ -146,7 +146,7 @@ namespace PhysicsEngine
 			hfDesc.samples.data       = &samples.front();
 			hfDesc.samples.stride     = sizeof(PxHeightFieldSample);
 
-			AddShape(PxHeightFieldGeometry(GetPhysics()->createHeightField(hfDesc),PxMeshGeometryFlags(),1.f,1.f,1.f));
+			CreateShape(PxHeightFieldGeometry(GetPhysics()->createHeightField(hfDesc),PxMeshGeometryFlags(),1.f,1.f,1.f));
 		}
 	};
 

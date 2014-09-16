@@ -49,11 +49,18 @@ namespace PhysicsEngine
 			return actor;
 		}
 
-		void Color(PxVec3 new_color, PxU32 shape_indx=0)
+		void Color(PxVec3 new_color, PxU32 shape_index=-1)
 		{
-			if (shape_indx < colors.size())
+			//change color of all shapes
+			if (shape_index == -1)
 			{
-				colors[shape_indx] = new_color;
+				for (unsigned int i = 0; i < colors.size(); i++)
+					colors[i] = new_color;
+			}
+			//or only the selected one
+			else if (shape_index < colors.size())
+			{
+				colors[shape_index] = new_color;
 			}
 		}
 
@@ -65,19 +72,48 @@ namespace PhysicsEngine
 				return 0;			
 		}
 
-		PxShape* GetShape(PxU32 index=0)
+		void Material(PxMaterial* new_material, PxU32 shape_index=-1)
 		{
-			if (actor->isRigidActor())
-			{
-				std::vector<PxShape*> shapes(((PxRigidActor*)actor)->getNbShapes());
-				if (index < ((PxRigidActor*)actor)->getShapes((PxShape**)&shapes.front(),shapes.size()))
-					return shapes[index];
-			}
+			PxShape* shape;
+			PxU32 shape_nr = ((PxRigidActor*)actor)->getNbShapes();
 
-			return 0;
+			//change material for all shapes
+			if (shape_index == -1)
+			{
+				for (PxU32 i = 0; i < shape_nr; i++)
+				{
+					shape = GetShape(i);
+					//change all materials belonging to the same shape
+					//this is probably not correct
+					std::vector<PxMaterial*> materials(shape->getNbMaterials());
+					shape->getMaterials(&materials.front(),materials.size());
+					for (unsigned int j = 0; j < materials.size(); j++)
+						materials[j] = new_material;
+				}
+			}
+			//or only for the selected one
+			else if (shape_index < shape_nr)
+			{
+				shape = GetShape(shape_index);
+				//change all materials belonging to the same shape
+				//this is probably not correct
+				std::vector<PxMaterial*> materials(shape->getNbMaterials());
+				shape->getMaterials(&materials.front(),materials.size());
+				for (unsigned int j = 0; j < materials.size(); j++)
+					materials[j] = new_material;
+			}
 		}
 
-		virtual void AddShape(const PxGeometry& geometry, PxReal density) {}
+		PxShape* GetShape(PxU32 index=0)
+		{
+			std::vector<PxShape*> shapes(((PxRigidActor*)actor)->getNbShapes());
+			if (index < ((PxRigidActor*)actor)->getShapes((PxShape**)&shapes.front(),shapes.size()))
+				return shapes[index];
+			else
+				return 0;
+		}
+
+		virtual void CreateShape(const PxGeometry& geometry, PxReal density) {}
 	};
 
 	class DynamicActor : public Actor
@@ -94,11 +130,12 @@ namespace PhysicsEngine
 				delete (UserData*)GetShape(i)->userData;
 		}
 
-		void AddShape(const PxGeometry& geometry, PxReal density)
+		void CreateShape(const PxGeometry& geometry, PxReal density)
 		{
 			PxShape* shape = ((PxRigidDynamic*)actor)->createShape(geometry,*GetMaterial());
 			PxRigidBodyExt::setMassAndUpdateInertia(*(PxRigidDynamic*)actor, density);
 			colors.push_back(default_color);
+			//pass the color pointers to the renderer
 			shape->userData = new UserData();
 			for (unsigned int i = 0; i < colors.size(); i++)
 				((UserData*)GetShape(i)->userData)->color = &colors[i];
@@ -119,10 +156,11 @@ namespace PhysicsEngine
 				delete (UserData*)GetShape(i)->userData;
 		}
 
-		void AddShape(const PxGeometry& geometry, PxReal density=0.f)
+		void CreateShape(const PxGeometry& geometry, PxReal density=0.f)
 		{
 			PxShape* shape = ((PxRigidStatic*)actor)->createShape(geometry,*GetMaterial());
 			colors.push_back(default_color);
+			//pass the color pointers to the renderer
 			shape->userData = new UserData();
 			for (unsigned int i = 0; i < colors.size(); i++)
 				((UserData*)GetShape(i)->userData)->color = &colors[i];
