@@ -7,6 +7,7 @@ obj/
 .DS_Store
 Debug/
 Release/
+.vs/
 html/
 latex/
 data/
@@ -15,6 +16,7 @@ data/
 *.ncb
 *.suo
 *.vcproj.*
+*.vcxproj.*
 *.sdf
 *.filters
 
