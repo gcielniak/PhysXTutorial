@@ -3,6 +3,7 @@
 #include "Extras\Camera.h"
 #include "Extras\Renderer.h"
 #include "Extras\HUD.h"
+#include <Windows.h>
 
 namespace VisualDebugger
 {
@@ -46,6 +47,8 @@ namespace VisualDebugger
 	bool key_state[MAX_KEYS];
 	bool hud_show = true;
 	HUD hud;
+	LARGE_INTEGER prev_counts, counter_frequency;
+	bool adaptive_time = false;
 
 	//Init the debugger
 	void Init(const char *window_name, int width, int height)
@@ -84,6 +87,10 @@ namespace VisualDebugger
 
 		//init motion callback
 		motionCallback(0,0);
+
+		//timing
+		QueryPerformanceFrequency(&counter_frequency);
+		QueryPerformanceCounter(&prev_counts);
 	}
 
 	void HUDInit()
@@ -163,6 +170,16 @@ namespace VisualDebugger
 
 		//finish rendering
 		Renderer::Finish();
+
+		if (adaptive_time) {
+			//cacluate the elapsed time
+			LARGE_INTEGER counts;
+			QueryPerformanceCounter(&counts);//high-res counter
+
+			delta_time = counts.QuadPart - prev_counts.QuadPart;
+			delta_time /= counter_frequency.QuadPart;//convert to seconds
+			prev_counts = counts;
+		}
 
 		//perform a single simulation step
 		scene->Update(delta_time);
