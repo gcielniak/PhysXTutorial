@@ -3,7 +3,7 @@
   <ImportGroup Label="PropertySheets">
   </ImportGroup>
   <PropertyGroup Label="UserMacros">
-    <PHYSX_SDK>C:\Program Files (x86)\NVIDIA Corporation\PhysX\NVIDIA PhysX SDK\3.3.4</PHYSX_SDK>
+    <PHYSX_SDK>H:\code\physx\PhysX-3.4.2\PhysX_3.4</PHYSX_SDK>
   </PropertyGroup>
   <PropertyGroup>
     <_ProjectFileVersion>11.0.50727.1</_ProjectFileVersion>
