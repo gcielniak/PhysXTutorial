@@ -7,8 +7,8 @@ using namespace std;
 using namespace physx;
 
 //PhysX objects
-PxPhysics* physics;
-PxFoundation* foundation;
+PxPhysics* physics = 0;
+PxFoundation* foundation = 0;
 #if PX_PHYSICS_VERSION < 0x304000 // SDK 3.3
 debugger::comm::PvdConnection* pvd = 0;
 #else
@@ -83,10 +83,10 @@ void PxRelease()
 {
 	if (scene)
 		scene->release();
-	if (pvd)
-		pvd->release();
 	if (physics)
 		physics->release();
+	if (pvd)
+		pvd->release();
 	if (foundation)
 		foundation->release();
 }
