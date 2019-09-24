@@ -29,10 +29,10 @@ bool PxInit()
 
 	//Init PhysX
 	//foundation
-#if PX_PHYSICS_VERSION < 0x304000 // SDK 3.3
-	foundation = PxCreateFoundation(PX_PHYSICS_VERSION, gDefaultAllocatorCallback, gDefaultErrorCallback);
-#else
+#if (PX_PHYSICS_VERSION & 0xFFFF00) ==  0x304000 // SDK 3.4 only
 	foundation = PxCreateFoundation(PX_FOUNDATION_VERSION, gDefaultAllocatorCallback, gDefaultErrorCallback);
+#else
+	foundation = PxCreateFoundation(PX_PHYSICS_VERSION, gDefaultAllocatorCallback, gDefaultErrorCallback);
 #endif
 
 	if(!foundation)
@@ -107,7 +107,11 @@ void InitScene()
 	//create a dynamic actor and place it 10 m above the ground
 	box = physics->createRigidDynamic(PxTransform(PxVec3(0.f, 10.f, 0.f)));
 	//create a box shape of 1m x 1m x 1m size (values are provided in halves)
+#if PX_PHYSICS_VERSION < 0x400000 // < SDK 4.0
 	box->createShape(PxBoxGeometry(.5f, .5f, .5f), *default_material);
+#else
+	PxRigidActorExt::createExclusiveShape(*box, PxBoxGeometry(.5f, .5f, .5f), *default_material);
+#endif
 	//update the mass of the box
 	PxRigidBodyExt::updateMassAndInertia(*box, 1.f); //density of 1kg/m^3
 	scene->addActor(*box);

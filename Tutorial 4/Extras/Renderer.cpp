@@ -156,6 +156,7 @@ namespace VisualDebugger
 			}
 		}
 
+#if PX_PHYSICS_VERSION < 0x400000 // < SDK 4.0
 		void RenderCloth(const PxCloth* cloth)
 		{
 			PxClothMeshDesc* mesh_desc = ((UserData*)cloth->userData)->cloth_mesh_desc;
@@ -216,6 +217,7 @@ namespace VisualDebugger
 
 			glPopMatrix();
 		}
+#endif
 
 		void reshapeCallback(int width, int height)
 		{
@@ -290,6 +292,7 @@ namespace VisualDebugger
 		{
 			PxVec3 shadow_color = default_color * 0.9;
 			for (PxU32 i = 0; i < numActors; i++) {
+#if PX_PHYSICS_VERSION < 0x400000 // < SDK 4.0
 #if PX_PHYSICS_VERSION < 0x304000 // SDK 3.3
 				if (actors[i]->isCloth()) {
 #else
@@ -297,72 +300,74 @@ namespace VisualDebugger
 #endif
 					RenderCloth((PxCloth*)actors[i]);
 				}
-#if PX_PHYSICS_VERSION < 0x304000 // SDK 3.3
-				else if (actors[i]->isRigidActor()) {
-#else
-				else if (actors[i]->is<PxRigidActor>()) {
+				else
 #endif
-					PxRigidActor* rigid_actor = (PxRigidActor*)actors[i];
-					std::vector<PxShape*> shapes(rigid_actor->getNbShapes());
-					rigid_actor->getShapes((PxShape**)&shapes.front(), (PxU32)shapes.size());
+#if PX_PHYSICS_VERSION < 0x304000 // SDK 3.3
+					if (actors[i]->isRigidActor()) {
+#else
+					if (actors[i]->is<PxRigidActor>()) {
+#endif
+						PxRigidActor* rigid_actor = (PxRigidActor*)actors[i];
+						std::vector<PxShape*> shapes(rigid_actor->getNbShapes());
+						rigid_actor->getShapes((PxShape**)&shapes.front(), (PxU32)shapes.size());
 
-					for (PxU32 j = 0; j < shapes.size(); j++)
-					{
-						const PxShape* shape = shapes[j];
-						PxTransform pose = PxShapeExt::getGlobalPose(*shape, *shape->getActor());
-						PxGeometryHolder h = shape->getGeometry();
-						//move the plane slightly down to avoid visual artefacts
-						if (h.getType() == PxGeometryType::ePLANE)
+						for (PxU32 j = 0; j < shapes.size(); j++)
 						{
-							pose.q *= PxQuat(PxHalfPi, PxVec3(0.f, 0.f, 1.f));
-							pose.p += PxVec3(0, -0.01, 0);
-						}
-
-						PxMat44 shapePose(pose);
-						// render object
-						glPushMatrix();
-						glMultMatrixf((float*)&shapePose);
-
-						PxVec3 shape_color = default_color;
-
-						if (shape->userData)
-						{
-							shape_color = *(((UserData*)shape->userData)->color);
+							const PxShape* shape = shapes[j];
+							PxTransform pose = PxShapeExt::getGlobalPose(*shape, *shape->getActor());
+							PxGeometryHolder h = shape->getGeometry();
+							//move the plane slightly down to avoid visual artefacts
 							if (h.getType() == PxGeometryType::ePLANE)
 							{
-								shadow_color = shape_color * 0.9;
+								pose.q *= PxQuat(PxHalfPi, PxVec3(0.f, 0.f, 1.f));
+								pose.p += PxVec3(0, -0.01, 0);
+							}
+
+							PxMat44 shapePose(pose);
+							// render object
+							glPushMatrix();
+							glMultMatrixf((float*)&shapePose);
+
+							PxVec3 shape_color = default_color;
+
+							if (shape->userData)
+							{
+								shape_color = *(((UserData*)shape->userData)->color);
+								if (h.getType() == PxGeometryType::ePLANE)
+								{
+									shadow_color = shape_color * 0.9;
+								}
+							}
+
+							if (h.getType() == PxGeometryType::ePLANE)
+								glDisable(GL_LIGHTING);
+
+							glColor4f(shape_color.x, shape_color.y, shape_color.z, 1.f);
+
+							RenderGeometry(h);
+
+							if (h.getType() == PxGeometryType::ePLANE)
+								glEnable(GL_LIGHTING);
+
+							glPopMatrix();
+
+							if (show_shadows && (h.getType() != PxGeometryType::ePLANE))
+							{
+								const PxVec3 shadowDir(-0.7071067f, -0.7071067f, -0.7071067f);
+								const PxReal shadowMat[] = { 1,0,0,0, -shadowDir.x / shadowDir.y,0,-shadowDir.z / shadowDir.y,0, 0,0,1,0, 0,0,0,1 };
+								glPushMatrix();
+								glMultMatrixf(shadowMat);
+								glMultMatrixf((float*)&shapePose);
+								glDisable(GL_LIGHTING);
+								glColor4f(shadow_color.x, shadow_color.y, shadow_color.z, 1.f);
+								RenderGeometry(h);
+								glEnable(GL_LIGHTING);
+								glPopMatrix();
 							}
 						}
-
-						if (h.getType() == PxGeometryType::ePLANE)
-							glDisable(GL_LIGHTING);
-
-						glColor4f(shape_color.x, shape_color.y, shape_color.z, 1.f);
-
-						RenderGeometry(h);
-
-						if (h.getType() == PxGeometryType::ePLANE)
-							glEnable(GL_LIGHTING);
-
-						glPopMatrix();
-
-						if (show_shadows && (h.getType() != PxGeometryType::ePLANE))
-						{
-							const PxVec3 shadowDir(-0.7071067f, -0.7071067f, -0.7071067f);
-							const PxReal shadowMat[] = { 1,0,0,0, -shadowDir.x / shadowDir.y,0,-shadowDir.z / shadowDir.y,0, 0,0,1,0, 0,0,0,1 };
-							glPushMatrix();
-							glMultMatrixf(shadowMat);
-							glMultMatrixf((float*)&shapePose);
-							glDisable(GL_LIGHTING);
-							glColor4f(shadow_color.x, shadow_color.y, shadow_color.z, 1.f);
-							RenderGeometry(h);
-							glEnable(GL_LIGHTING);
-							glPopMatrix();
-						}
 					}
-				}
 
-				}
+					}
 				}
 
 		void Finish()

@@ -25,10 +25,10 @@ namespace PhysicsEngine
 	{
 		//foundation
 		if (!foundation) {
-#if PX_PHYSICS_VERSION < 0x304000 // SDK 3.3
-			foundation = PxCreateFoundation(PX_PHYSICS_VERSION, gDefaultAllocatorCallback, gDefaultErrorCallback);
-#else
+#if (PX_PHYSICS_VERSION & 0xFFFF00) ==  0x304000 // SDK 3.4 only
 			foundation = PxCreateFoundation(PX_FOUNDATION_VERSION, gDefaultAllocatorCallback, gDefaultErrorCallback);
+#else
+			foundation = PxCreateFoundation(PX_PHYSICS_VERSION, gDefaultAllocatorCallback, gDefaultErrorCallback);
 #endif
 		}
 
@@ -194,7 +194,11 @@ namespace PhysicsEngine
 
 	void DynamicActor::CreateShape(const PxGeometry& geometry, PxReal density)
 	{
+#if PX_PHYSICS_VERSION < 0x400000 // < SDK 4.0
 		PxShape* shape = ((PxRigidDynamic*)actor)->createShape(geometry, *GetMaterial());
+#else
+		PxShape* shape = PxRigidActorExt::createExclusiveShape(*(PxRigidActor*)actor, geometry, *GetMaterial());
+#endif
 		PxRigidBodyExt::updateMassAndInertia(*(PxRigidDynamic*)actor, density);
 		colors.push_back(default_color);
 		//pass the color pointers to the renderer
@@ -226,7 +230,11 @@ namespace PhysicsEngine
 
 	void StaticActor::CreateShape(const PxGeometry& geometry, PxReal density)
 	{
+#if PX_PHYSICS_VERSION < 0x400000 // < SDK 4.0
 		PxShape* shape = ((PxRigidStatic*)actor)->createShape(geometry, *GetMaterial());
+#else
+		PxShape* shape = PxRigidActorExt::createExclusiveShape(*(PxRigidActor*)actor, geometry, *GetMaterial());
+#endif
 		colors.push_back(default_color);
 		//pass the color pointers to the renderer
 		shape->userData = new UserData();
@@ -344,8 +352,11 @@ namespace PhysicsEngine
 		physx::PxActorTypeSelectionFlags selection_flag = PxActorTypeSelectionFlag::eRIGID_DYNAMIC | PxActorTypeSelectionFlag::eRIGID_STATIC |
 			PxActorTypeSelectionFlag::eCLOTH;
 #else
-		physx::PxActorTypeFlags selection_flag = PxActorTypeFlag::eRIGID_DYNAMIC | PxActorTypeFlag::eRIGID_STATIC |
-			PxActorTypeFlag::eCLOTH;
+		physx::PxActorTypeFlags selection_flag = PxActorTypeFlag::eRIGID_DYNAMIC | PxActorTypeFlag::eRIGID_STATIC
+#if PX_PHYSICS_VERSION < 0x400000 // < SDK 4.0
+			| PxActorTypeFlag::eCLOTH
+#endif
+			;
 #endif
 		std::vector<PxActor*> actors(px_scene->getNbActors(selection_flag));
 		px_scene->getActors(selection_flag, (PxActor**)&actors.front(), (PxU32)actors.size());

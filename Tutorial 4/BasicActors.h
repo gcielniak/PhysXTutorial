@@ -206,6 +206,7 @@ namespace PhysicsEngine
 		}
 	};
 
+#if PX_PHYSICS_VERSION < 0x400000 // < SDK 4.0
 	class Cloth : public Actor
 	{
 		PxClothMeshDesc mesh_desc;
@@ -276,4 +277,5 @@ namespace PhysicsEngine
 			delete (UserData*)actor->userData;		
 		}
 	};
+#endif
 }

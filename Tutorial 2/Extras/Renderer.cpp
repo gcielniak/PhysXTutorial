@@ -156,6 +156,7 @@ namespace VisualDebugger
 			}
 		}
 
+#if PX_PHYSICS_VERSION < 0x400000 // < SDK 4.0
 		void RenderCloth(const PxCloth* cloth)
 		{
 			PxClothMeshDesc* mesh_desc = ((UserData*)cloth->userData)->cloth_mesh_desc;
@@ -216,6 +217,7 @@ namespace VisualDebugger
 
 			glPopMatrix();
 		}
+#endif
 
 		void reshapeCallback(int width, int height)
 		{
@@ -290,17 +292,19 @@ namespace VisualDebugger
 		{
 			PxVec3 shadow_color = default_color*0.9;
 			for(PxU32 i=0;i<numActors;i++) {
+#if PX_PHYSICS_VERSION < 0x400000 // < SDK 4.0
 #if PX_PHYSICS_VERSION < 0x304000 // SDK 3.3
 				if (actors[i]->isCloth()) {
 #else
 				if (actors[i]->is<PxCloth>()) {
 #endif
 					RenderCloth((PxCloth*)actors[i]);
-				}
+				} else
+#endif
 #if PX_PHYSICS_VERSION < 0x304000 // SDK 3.3
-				else if (actors[i]->isRigidActor()) {
+				if (actors[i]->isRigidActor()) {
 #else
-				else if (actors[i]->is<PxRigidActor>()) {
+				if (actors[i]->is<PxRigidActor>()) {
 #endif
 					PxRigidActor* rigid_actor = (PxRigidActor*)actors[i];
 					std::vector<PxShape*> shapes(rigid_actor->getNbShapes());

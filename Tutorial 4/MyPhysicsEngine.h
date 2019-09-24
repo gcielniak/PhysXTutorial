@@ -123,7 +123,9 @@ namespace PhysicsEngine
 	class MyScene : public Scene
 	{
 		Plane* plane;
+#if PX_PHYSICS_VERSION < 0x400000 // < SDK 4.0
 		Cloth* cloth;
+#endif
 		Box* box;
 		MySimulationEventCallback* my_callback;
 		
@@ -138,11 +140,13 @@ namespace PhysicsEngine
 			px_scene->setVisualizationParameter(PxVisualizationParameter::eSCALE, 1.0f);
 			px_scene->setVisualizationParameter(PxVisualizationParameter::eCOLLISION_SHAPES, 1.0f);
 
+#if PX_PHYSICS_VERSION < 0x400000 // < SDK 4.0
 			//cloth visualisation
 			px_scene->setVisualizationParameter(PxVisualizationParameter::eCLOTH_HORIZONTAL, 1.0f);
 			px_scene->setVisualizationParameter(PxVisualizationParameter::eCLOTH_VERTICAL, 1.0f);
 			px_scene->setVisualizationParameter(PxVisualizationParameter::eCLOTH_BENDING, 1.0f);
 			px_scene->setVisualizationParameter(PxVisualizationParameter::eCLOTH_SHEARING, 1.0f);
+#endif
 		}
 
 		//Custom scene initialisation
@@ -160,16 +164,20 @@ namespace PhysicsEngine
 			plane->Color(PxVec3(210.f/255.f,210.f/255.f,210.f/255.f));
 			Add(plane);
 
+#if PX_PHYSICS_VERSION < 0x400000 // < SDK 4.0
 			cloth = new Cloth(PxTransform(PxVec3(-4.f,9.f,0.f)), PxVec2(8.f,8.f), 40, 40);
 			cloth->Color(color_palette[2]);
 			Add(cloth);
+#endif
 
 			box = new Box(PxTransform(PxVec3(0.f,2.f,0.f)),PxVec3(2.f,2.f,2.f));
 			box->Color(color_palette[3]);
 			Add(box);
 
+#if PX_PHYSICS_VERSION < 0x400000 // < SDK 4.0
 			//setting custom cloth parameters
 			//((PxCloth*)cloth->Get())->setStretchConfig(PxClothFabricPhaseType::eBENDING, PxClothStretchConfig(1.f));
+#endif
 		}
 
 		//Custom udpate function

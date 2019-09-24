@@ -23,10 +23,10 @@ namespace PhysicsEngine
 	{
 		//foundation
 		if (!foundation) {
-#if PX_PHYSICS_VERSION < 0x304000 // SDK 3.3
-			foundation = PxCreateFoundation(PX_PHYSICS_VERSION, gDefaultAllocatorCallback, gDefaultErrorCallback);
-#else
+#if (PX_PHYSICS_VERSION & 0xFFFF00) ==  0x304000 // SDK 3.4 only
 			foundation = PxCreateFoundation(PX_FOUNDATION_VERSION, gDefaultAllocatorCallback, gDefaultErrorCallback);
+#else
+			foundation = PxCreateFoundation(PX_PHYSICS_VERSION, gDefaultAllocatorCallback, gDefaultErrorCallback);
 #endif
 		}
 
@@ -112,7 +112,11 @@ namespace PhysicsEngine
 
 	void DynamicActor::CreateShape(const PxGeometry& geometry, PxReal density)
 	{
-		PxShape* shape = ((PxRigidDynamic*)actor)->createShape(geometry,*GetMaterial());
+#if PX_PHYSICS_VERSION < 0x400000 // < SDK 4.0
+		PxShape* shape = ((PxRigidDynamic*)actor)->createShape(geometry, *GetMaterial());
+#else
+		PxShape* shape = PxRigidActorExt::createExclusiveShape(*(PxRigidActor*)actor, geometry, *GetMaterial());
+#endif
 		PxRigidBodyExt::updateMassAndInertia(*(PxRigidDynamic*)actor, density);
 	}
 
@@ -123,7 +127,11 @@ namespace PhysicsEngine
 
 	void StaticActor::CreateShape(const PxGeometry& geometry, PxReal density)
 	{
-		PxShape* shape = ((PxRigidStatic*)actor)->createShape(geometry,*GetMaterial());
+#if PX_PHYSICS_VERSION < 0x400000 // < SDK 4.0
+		PxShape* shape = ((PxRigidStatic*)actor)->createShape(geometry, *GetMaterial());
+#else
+		PxRigidActorExt::createExclusiveShape(*(PxRigidActor*)actor, geometry, *GetMaterial());
+#endif
 	}
 
 	///Scene methods
