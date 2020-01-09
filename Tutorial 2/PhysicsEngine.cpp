@@ -12,7 +12,11 @@ namespace PhysicsEngine
 
 	//PhysX objects
 	PxFoundation* foundation = 0;
-	debugger::comm::PvdConnection* vd_connection = 0;
+#if PX_PHYSICS_VERSION < 0x304000 // SDK 3.3
+	debugger::comm::PvdConnection* pvd = 0;
+#else
+	PxPvd*  pvd = 0;
+#endif
 	PxPhysics* physics = 0;
 	PxCooking* cooking = 0;
 
@@ -20,17 +24,38 @@ namespace PhysicsEngine
 	void PxInit()
 	{
 		//foundation
-		if (!foundation)
+		if (!foundation) {
+#if PX_PHYSICS_VERSION < 0x304000 // SDK 3.3
 			foundation = PxCreateFoundation(PX_PHYSICS_VERSION, gDefaultAllocatorCallback, gDefaultErrorCallback);
+#else
+			foundation = PxCreateFoundation(PX_FOUNDATION_VERSION, gDefaultAllocatorCallback, gDefaultErrorCallback);
+#endif
+		}
 
-		if(!foundation)
+		if (!foundation)
 			throw new Exception("PhysicsEngine::PxInit, Could not create the PhysX SDK foundation.");
+
+		//visual debugger
+		if (!pvd) {
+#if PX_PHYSICS_VERSION < 0x304000 // SDK 3.3
+			pvd = PxVisualDebuggerExt::createConnection(physics->getPvdConnectionManager(), "localhost", 5425, 100,
+				PxVisualDebuggerExt::getAllConnectionFlags());
+#else
+			pvd = PxCreatePvd(*foundation);
+			PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate("localhost", 5425, 10);
+			pvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
+#endif
+		}
 
 		//physics
 		if (!physics)
+#if PX_PHYSICS_VERSION < 0x304000 // SDK 3.3
 			physics = PxCreatePhysics(PX_PHYSICS_VERSION, *foundation, PxTolerancesScale());
+#else
+			physics = PxCreatePhysics(PX_PHYSICS_VERSION, *foundation, PxTolerancesScale(), true, pvd);
+#endif
 
-		if(!physics)
+		if (!physics)
 			throw new Exception("PhysicsEngine::PxInit, Could not initialise the PhysX SDK.");
 
 		if (!cooking)
@@ -39,23 +64,18 @@ namespace PhysicsEngine
 		if(!cooking)
 			throw new Exception("PhysicsEngine::PxInit, Could not initialise the cooking component.");
 
-		//visual debugger
-		if (!vd_connection)
-			vd_connection = PxVisualDebuggerExt::createConnection(physics->getPvdConnectionManager(), 
-			"localhost", 5425, 100, PxVisualDebuggerExt::getAllConnectionFlags());
-
 		//create a deafult material
 		CreateMaterial();
 	}
 
 	void PxRelease()
 	{
-		if (vd_connection)
-			vd_connection->release();
 		if (cooking)
 			cooking->release();
 		if (physics)
 			physics->release();
+		if (pvd)
+			pvd->release();
 		if (foundation)
 			foundation->release();
 	}
@@ -185,7 +205,11 @@ namespace PhysicsEngine
 
 	void DynamicActor::SetKinematic(bool value, PxU32 index)
 	{
+#if PX_PHYSICS_VERSION < 0x304000 // SDK 3.3
 		((PxRigidDynamic*)actor)->setRigidDynamicFlag(PxRigidDynamicFlag::eKINEMATIC, value);
+#else
+		((PxRigidDynamic*)actor)->setRigidBodyFlag(PxRigidBodyFlag::eKINEMATIC, value);
+#endif
 	}
 
 	StaticActor::StaticActor(const PxTransform& pose)
@@ -285,8 +309,13 @@ namespace PhysicsEngine
 
 	void Scene::SelectNextActor()
 	{
+#if PX_PHYSICS_VERSION < 0x304000 // SDK 3.3
 		std::vector<PxRigidDynamic*> actors(px_scene->getNbActors(PxActorTypeSelectionFlag::eRIGID_DYNAMIC));
 		if (actors.size() && (px_scene->getActors(PxActorTypeSelectionFlag::eRIGID_DYNAMIC, (PxActor**)&actors.front(), (PxU32)actors.size())))
+#else
+		std::vector<PxRigidDynamic*> actors(px_scene->getNbActors(PxActorTypeFlag::eRIGID_DYNAMIC));
+		if (actors.size() && (px_scene->getActors(PxActorTypeFlag::eRIGID_DYNAMIC, (PxActor**)&actors.front(), (PxU32)actors.size())))
+#endif
 		{
 			if (selected_actor)
 			{
@@ -311,8 +340,13 @@ namespace PhysicsEngine
 
 	std::vector<PxActor*> Scene::GetAllActors()
 	{
-		physx::PxActorTypeSelectionFlags selection_flag = PxActorTypeSelectionFlag::eRIGID_DYNAMIC | PxActorTypeSelectionFlag::eRIGID_STATIC | 
+#if PX_PHYSICS_VERSION < 0x304000 // SDK 3.3
+		physx::PxActorTypeSelectionFlags selection_flag = PxActorTypeSelectionFlag::eRIGID_DYNAMIC | PxActorTypeSelectionFlag::eRIGID_STATIC |
 			PxActorTypeSelectionFlag::eCLOTH;
+#else
+		physx::PxActorTypeFlags selection_flag = PxActorTypeFlag::eRIGID_DYNAMIC | PxActorTypeFlag::eRIGID_STATIC |
+			PxActorTypeFlag::eCLOTH;
+#endif
 		std::vector<PxActor*> actors(px_scene->getNbActors(selection_flag));
 		px_scene->getActors(selection_flag, (PxActor**)&actors.front(), (PxU32)actors.size());
 		return actors;

@@ -7,9 +7,13 @@ using namespace std;
 using namespace physx;
 
 //PhysX objects
-PxPhysics* physics;
-PxFoundation* foundation;
-debugger::comm::PvdConnection* vd_connection;
+PxPhysics* physics = 0;
+PxFoundation* foundation = 0;
+#if PX_PHYSICS_VERSION < 0x304000 // SDK 3.3
+debugger::comm::PvdConnection* pvd = 0;
+#else
+PxPvd*  pvd = 0;
+#endif
 
 //simulation objects
 PxScene* scene;
@@ -25,20 +29,34 @@ bool PxInit()
 
 	//Init PhysX
 	//foundation
+#if PX_PHYSICS_VERSION < 0x304000 // SDK 3.3
 	foundation = PxCreateFoundation(PX_PHYSICS_VERSION, gDefaultAllocatorCallback, gDefaultErrorCallback);
+#else
+	foundation = PxCreateFoundation(PX_FOUNDATION_VERSION, gDefaultAllocatorCallback, gDefaultErrorCallback);
+#endif
 
 	if(!foundation)
 		return false;
 
+	//connect to an external visual debugger (if exists)
+#if PX_PHYSICS_VERSION < 0x304000 // SDK 3.3
+	pvd = PxVisualDebuggerExt::createConnection(physics->getPvdConnectionManager(), "localhost", 5425, 100,
+		PxVisualDebuggerExt::getAllConnectionFlags());
+#else
+	pvd = PxCreatePvd(*foundation);
+	PxPvdTransport* transport = PxDefaultPvdSocketTransportCreate("localhost", 5425, 10);
+	pvd->connect(*transport, PxPvdInstrumentationFlag::eALL);
+#endif
+
 	//physics
+#if PX_PHYSICS_VERSION < 0x304000 // SDK 3.3
 	physics = PxCreatePhysics(PX_PHYSICS_VERSION, *foundation, PxTolerancesScale());
+#else
+	physics = PxCreatePhysics(PX_PHYSICS_VERSION, *foundation, PxTolerancesScale(), true, pvd);
+#endif
 
 	if(!physics)
 		return false;
-
-	//connect to an external visual debugger (if exists)
-	vd_connection = PxVisualDebuggerExt::createConnection(physics->getPvdConnectionManager(), "localhost", 5425, 100, 
-		PxVisualDebuggerExt::getAllConnectionFlags());
 
 	//create a default scene
 	PxSceneDesc sceneDesc(physics->getTolerancesScale());
@@ -65,10 +83,10 @@ void PxRelease()
 {
 	if (scene)
 		scene->release();
-	if (vd_connection)
-		vd_connection->release();
 	if (physics)
 		physics->release();
+	if (pvd)
+		pvd->release();
 	if (foundation)
 		foundation->release();
 }

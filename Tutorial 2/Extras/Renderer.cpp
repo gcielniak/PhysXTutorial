@@ -289,14 +289,19 @@ namespace VisualDebugger
 		void Render(PxActor** actors, const PxU32 numActors)
 		{
 			PxVec3 shadow_color = default_color*0.9;
-			for(PxU32 i=0;i<numActors;i++)
-			{
-				if (actors[i]->isCloth())
-				{
+			for(PxU32 i=0;i<numActors;i++) {
+#if PX_PHYSICS_VERSION < 0x304000 // SDK 3.3
+				if (actors[i]->isCloth()) {
+#else
+				if (actors[i]->is<PxCloth>()) {
+#endif
 					RenderCloth((PxCloth*)actors[i]);
 				}
-				else if (actors[i]->isRigidActor())
-				{
+#if PX_PHYSICS_VERSION < 0x304000 // SDK 3.3
+				else if (actors[i]->isRigidActor()) {
+#else
+				else if (actors[i]->is<PxRigidActor>()) {
+#endif
 					PxRigidActor* rigid_actor = (PxRigidActor*)actors[i];
 					std::vector<PxShape*> shapes(rigid_actor->getNbShapes());
 					rigid_actor->getShapes((PxShape**)&shapes.front(), (PxU32)shapes.size());
