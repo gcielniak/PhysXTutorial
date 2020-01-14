@@ -146,15 +146,15 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(PHYSX_SDK)\include;.\Graphics\include\win32</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(PHYSX_SDK)\include;$(PHYSX_SDK)\..\PxShared\include;.\Graphics\include\win32</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PreprocessorDefinitions>NDEBUG;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(PHYSX_SDK)\lib\vc14win64;.\Graphics\lib\win64\glut</AdditionalLibraryDirectories>
-      <AdditionalDependencies>PhysX3Common_$(PlatformTarget).lib;PhysX3Extensions.lib;PhysXVisualDebuggerSDK.lib;PhysX3_$(PlatformTarget).lib;PhysX3Cooking_$(PlatformTarget).lib;glut32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(PHYSX_SDK)\Lib\vc15win64;$(PHYSX_SDK)\..\PxShared\Lib\vc15win64;.\Graphics\lib\win64\glut</AdditionalLibraryDirectories>
+      <AdditionalDependencies>PhysX3Common_$(PlatformTarget).lib;PhysX3Extensions.lib;PhysX3_$(PlatformTarget).lib;PhysX3Cooking_$(PlatformTarget).lib;PxFoundation_$(PlatformTarget).lib;PxPvdSDK_$(PlatformTarget).lib;glut32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
