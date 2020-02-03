@@ -86,6 +86,20 @@
       <AdditionalLibraryDirectories>$(PHYSX_SDK)\Lib\vc14win32</AdditionalLibraryDirectories>
       <AdditionalDependencies>PhysX3CommonDEBUG_$(PlatformTarget).lib;PhysX3ExtensionsDEBUG.lib;PhysXVisualDebuggerSDKDEBUG.lib;PhysX3DEBUG_$(PlatformTarget).lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>
+        mkdir "$(TargetDir)\temp"
+        xcopy "$(PHYSX_SDK)\Bin\vc15win32" "$(TargetDir)\temp" /y /c
+        xcopy "$(PHYSX_SDK)\..\PxShared\bin\vc15win32" "$(TargetDir)\temp" /y /c
+        mkdir "$(TargetDir)\temp\dllFiles\"
+        move "$(TargetDir)\temp\*DEBUG*.dll" "$(TargetDir)\temp\dllFiles"
+        move "$(TargetDir)\temp\glut32.dll" "$(TargetDir)\temp\dllFiles"
+        move "$(TargetDir)\temp\nvToolsExt32_1.dll" "$(TargetDir)\temp\dllFiles"
+        move "$(TargetDir)\temp\PhysXDevice.dll" "$(TargetDir)\temp\dllFiles"
+        move "$(TargetDir)\temp\dllFiles\*.*" "$(TargetDir)\"
+        rmdir "$(TargetDir)\temp" /s /q
+      </Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -99,6 +113,20 @@
       <AdditionalLibraryDirectories>$(PHYSX_SDK)\Lib\vc15win64;$(PHYSX_SDK)\..\PxShared\Lib\vc15win64;</AdditionalLibraryDirectories>
       <AdditionalDependencies>PxFoundationDEBUG_$(PlatformTarget).lib;PhysX3DEBUG_$(PlatformTarget).lib;PhysX3ExtensionsDEBUG.lib;PxPvdSDKDEBUG_$(PlatformTarget).lib;PhysX3CommonDEBUG_$(PlatformTarget).lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>
+        mkdir "$(TargetDir)\temp"
+        xcopy "$(PHYSX_SDK)\Bin\vc15win64" "$(TargetDir)\temp" /y /c
+        xcopy "$(PHYSX_SDK)\..\PxShared\bin\vc15win64" "$(TargetDir)\temp" /y /c
+        mkdir "$(TargetDir)\temp\dllFiles\"
+        move "$(TargetDir)\temp\*DEBUG*.dll" "$(TargetDir)\temp\dllFiles"
+        move "$(TargetDir)\temp\glut32.dll" "$(TargetDir)\temp\dllFiles"
+        move "$(TargetDir)\temp\nvToolsExt64_1.dll" "$(TargetDir)\temp\dllFiles"
+        move "$(TargetDir)\temp\PhysXDevice64.dll" "$(TargetDir)\temp\dllFiles"
+        move "$(TargetDir)\temp\dllFiles\*.*" "$(TargetDir)\"
+        rmdir "$(TargetDir)\temp" /s /q
+      </Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -117,6 +145,19 @@
       <AdditionalLibraryDirectories>$(PHYSX_SDK)\Lib\vc14win32</AdditionalLibraryDirectories>
       <AdditionalDependencies>PhysX3Common_$(PlatformTarget).lib;PhysX3Extensions.lib;PhysXVisualDebuggerSDK.lib;PhysX3_$(PlatformTarget).lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>
+        mkdir "$(TargetDir)\temp"
+        xcopy "$(PHYSX_SDK)\Bin\vc15win32" "$(TargetDir)\temp" /y /c
+        xcopy "$(PHYSX_SDK)\..\PxShared\bin\vc15win32" "$(TargetDir)\temp" /y /c
+        mkdir "$(TargetDir)\temp\dllFiles\"
+        del "$(TargetDir)\temp\*DEBUG*.dll" /q
+        del "$(TargetDir)\temp\*CHECKED*.dll" /q
+        move "$(TargetDir)\temp\*.dll" "$(TargetDir)\temp\dllFiles"
+        move "$(TargetDir)\temp\dllFiles\*.*" "$(TargetDir)\"
+        rmdir "$(TargetDir)\temp" /s /q
+      </Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -135,6 +176,19 @@
       <AdditionalLibraryDirectories>$(PHYSX_SDK)\Lib\vc15win64;$(PHYSX_SDK)\..\PxShared\Lib\vc15win64;</AdditionalLibraryDirectories>
       <AdditionalDependencies>PhysX3Extensions.lib;PxPvdSDK_$(PlatformTarget).lib;PhysX3_$(PlatformTarget).lib;PxFoundation_$(PlatformTarget).lib;PhysX3Common_$(PlatformTarget).lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>
+        mkdir "$(TargetDir)\temp"
+        xcopy "$(PHYSX_SDK)\Bin\vc15win64" "$(TargetDir)\temp" /y /c
+        xcopy "$(PHYSX_SDK)\..\PxShared\bin\vc15win64" "$(TargetDir)\temp" /y /c
+        mkdir "$(TargetDir)\temp\dllFiles\"
+        del "$(TargetDir)\temp\*DEBUG*.dll" /q
+        del "$(TargetDir)\temp\*CHECKED*.dll" /q
+        move "$(TargetDir)\temp\*.dll" "$(TargetDir)\temp\dllFiles"
+        move "$(TargetDir)\temp\dllFiles\*.*" "$(TargetDir)\"
+        rmdir "$(TargetDir)\temp" /s /q
+      </Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Basic Program.cpp" />
