@@ -169,6 +169,28 @@ namespace PhysicsEngine
 			return std::vector<PxShape*>();
 	}
 
+	void Actor::SetTrigger(bool value, PxU32 shape_index)
+	{
+		std::vector<PxShape*> shape_list = GetShapes(shape_index);
+		for (PxU32 i = 0; i < shape_list.size(); i++)
+		{
+			shape_list[i]->setFlag(PxShapeFlag::eSIMULATION_SHAPE, !value);
+			shape_list[i]->setFlag(PxShapeFlag::eTRIGGER_SHAPE, value);
+		}
+	}
+
+	void Actor::SetupFiltering(PxU32 filterGroup, PxU32 filterMask, PxU32 shape_index)
+	{
+		std::vector<PxShape*> shape_list = GetShapes(shape_index);
+		for (PxU32 i = 0; i < shape_list.size(); i++)
+			shape_list[i]->setSimulationFilterData(PxFilterData(filterGroup, filterMask, 0, 0));
+
+		// PxFilterData(word0, word1, 0, 0)
+		// word0 = own ID
+		// word1 = ID mask to filter pairs that trigger a contact callback
+	}
+
+
 	void Actor::Name(const string& new_name)
 	{
 		name = new_name;
